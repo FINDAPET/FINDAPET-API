@@ -3,10 +3,12 @@
 <head>
   <meta charset="utf-8">
 
-  <title>#(title)</title>
+  </center>
+      <title>FINDAPET</title>
+  <center>
 </head>
 
 <body>
-  <h1>#(title)</h1>
+  <h1>FINDAPET</h1>
 </body>
 </html>
