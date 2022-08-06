@@ -21,6 +21,14 @@ public func configure(_ app: Application) throws {
     // register routes
     try routes(app)
     
+    app.migrations.add(
+        CreateAd(),
+        CreateDeal(),
+        CreateUser(),
+        CreateChatRoom(),
+        CreateUserToken()
+    )
+    
     #if DEBUG
     try app.autoRevert().wait()
     try app.autoMigrate().wait()
