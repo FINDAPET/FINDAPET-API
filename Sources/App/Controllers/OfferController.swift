@@ -15,7 +15,7 @@ struct OfferController: RouteCollection {
         let offers = routes.grouped("offers")
         let userTokenProtected = offers.grouped(UserToken.authenticator())
         
-        offers.webSocket("new", onUpgrade: self.create(req:ws:))
+        userTokenProtected.webSocket("new", onUpgrade: self.create(req:ws:))
         userTokenProtected.delete(":offerID", "delete", use: self.delete(req:))
         userTokenProtected.get("all", "admin", use: self.index(req:))
     }
