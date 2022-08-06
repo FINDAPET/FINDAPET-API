@@ -35,16 +35,16 @@ final class Deal: Model, Content {
     var viewsCount: Int
     
     @Field(key: "mode")
-    var mode: DealMode.RawValue
+    var mode: String
     
     @Field(key: "pet_type")
-    var petType: DealPetType.RawValue
+    var petType: String
     
     @Field(key: "pet_breed")
-    var petBreed: DealPetBreed.RawValue
+    var petBreed: String
     
     @Field(key: "show_class")
-    var showClass: DealShowClass.RawValue
+    var showClass: String
     
     @Field(key: "is_male")
     var isMale: Bool
@@ -90,10 +90,13 @@ final class Deal: Model, Content {
     
     @OptionalParent(key: "buyer_id")
     var buyer: User?
+    
+    @Children(for: \.$deal)
+    var offers: [Offer]
         
     init() {}
     
-    init(id: UUID? = nil, title: String, photoPaths: [String], tags: [String] = [String](), isPremiumDeal: Bool = false, isActive: Bool = true, viewsCount: Int = 0, mode: DealMode.RawValue, petType: DealPetType.RawValue, petBreed: DealPetBreed.RawValue, showClass: DealShowClass.RawValue, isMale: Bool, age: String, color: String, price: String, catteryID: User.IDValue, country: String? = nil, city: String? = nil, description: String? = nil, whatsappNumber: String? = nil, telegramUsername: String? = nil, instagramUsername: String? = nil, facebookUsername: String? = nil, vkUsername: String? = nil, mail: String? = nil, buyerID: User.IDValue? = nil) {
+    init(id: UUID? = nil, title: String, photoPaths: [String], tags: [String] = [String](), isPremiumDeal: Bool = false, isActive: Bool = true, viewsCount: Int = 0, mode: String, petType: String, petBreed: String, showClass: String, isMale: Bool, age: String, color: String, price: String, catteryID: User.IDValue, country: String? = nil, city: String? = nil, description: String? = nil, whatsappNumber: String? = nil, telegramUsername: String? = nil, instagramUsername: String? = nil, facebookUsername: String? = nil, vkUsername: String? = nil, mail: String? = nil, buyerID: User.IDValue? = nil) {
         self.id = id
         self.title = title
         self.photoPaths = photoPaths
@@ -103,6 +106,9 @@ final class Deal: Model, Content {
         self.viewsCount = viewsCount
         self.mode = mode
         self.petType = petType
+        self.petBreed = petBreed
+        self.showClass = showClass
+        self.isMale = isMale
         self.age = age
         self.color = color
         self.price = price
@@ -129,10 +135,10 @@ extension Deal {
         var tags: [String]
         var isPremiumDeal: Bool
         var isActive: Bool
-        var mode: DealMode
-        var petType: DealPetType
-        var petBreed: DealPetBreed
-        var showClass: DealShowClass
+        var mode: String
+        var petType: String
+        var petBreed: String
+        var showClass: String
         var isMale: Bool
         var age: String
         var color: String
@@ -149,7 +155,7 @@ extension Deal {
         var mail: String?
         var buyerID: User.IDValue?
         
-        init(id: UUID? = nil, title: String, photoDatas: [Data], tags: [String] = [String](), isPremiumDeal: Bool = false, isActive: Bool = true, mode: DealMode, petType: DealPetType, petBreed: DealPetBreed, showClass: DealShowClass, isMale: Bool, age: String, color: String, price: String, catteryID: User.IDValue, country: String? = nil, city: String? = nil, description: String? = nil, whatsappNumber: String? = nil, telegramUsername: String? = nil, instagramUsername: String? = nil, facebookUsername: String? = nil, vkUsername: String? = nil, mail: String? = nil, buyerID: User.IDValue?) {
+        init(id: UUID? = nil, title: String, photoDatas: [Data], tags: [String] = [String](), isPremiumDeal: Bool = false, isActive: Bool = true, mode: String, petType: String, petBreed: String, showClass: String, isMale: Bool, age: String, color: String, price: String, catteryID: User.IDValue, country: String? = nil, city: String? = nil, description: String? = nil, whatsappNumber: String? = nil, telegramUsername: String? = nil, instagramUsername: String? = nil, facebookUsername: String? = nil, vkUsername: String? = nil, mail: String? = nil, buyerID: User.IDValue?) {
             self.id = id
             self.title = title
             self.photoDatas = photoDatas
@@ -188,10 +194,10 @@ extension Deal {
         var isPremiumDeal: Bool
         var isActive: Bool
         var viewsCount: Int
-        var mode: DealMode.RawValue
-        var petType: DealPetType.RawValue
-        var petBreed: DealPetBreed.RawValue
-        var showClass: DealShowClass.RawValue
+        var mode: String
+        var petType: String
+        var petBreed: String
+        var showClass: String
         var isMale: Bool
         var age: String
         var color: String
@@ -207,7 +213,8 @@ extension Deal {
         var vkUsername: String?
         var mail: String?
         var buyer: User.Output?
+        var offers: [Offer.Output]
         
-        var score: Int { self.cattery.deals.filter { !$0.isActive }.count * (self.isPremiumDeal ? 2 : 1) }
+        var score: Int { self.cattery.deals.filter { $0.buyer != nil }.count * (self.isPremiumDeal ? 2 : 1) }
     }
 }

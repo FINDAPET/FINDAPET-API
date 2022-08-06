@@ -26,11 +26,13 @@ public func configure(_ app: Application) throws {
         CreateDeal(),
         CreateUser(),
         CreateChatRoom(),
-        CreateUserToken()
+        CreateUserToken(),
+        CreateOffer()
     )
     
     #if DEBUG
     try app.autoRevert().wait()
-    try app.autoMigrate().wait()
     #endif
+    
+    try app.autoMigrate().wait()
 }
