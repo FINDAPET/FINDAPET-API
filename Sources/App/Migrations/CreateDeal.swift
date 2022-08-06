@@ -23,7 +23,7 @@ struct CreateDeal: AsyncMigration {
             .field("pet_type", .string, .required)
             .field("pet_breed", .string, .required)
             .field("show_class", .string, .required)
-            .field("is_male", .string, .required)
+            .field("is_male", .bool, .required)
             .field("age", .string, .required)
             .field("color", .string, .required)
             .field("price", .string, .required)

@@ -50,9 +50,9 @@ extension Ad {
         var contentData: Data
         var customerName: String?
         var link: String?
-        var catteryID: User.IDValue
+        var catteryID: User.IDValue?
         
-        init(id: UUID? = nil, contentData: Data, customerName: String? = nil, link: String? = nil, catteryID: User.IDValue) {
+        init(id: UUID? = nil, contentData: Data, customerName: String? = nil, link: String? = nil, catteryID: User.IDValue?) {
             self.id = id
             self.contentData = contentData
             self.customerName = customerName
@@ -68,6 +68,6 @@ extension Ad {
         var contentData: Data
         var custromerName: String?
         var link: String?
-        var cattery: User.Output
+        var cattery: User.Output?
     }
 }

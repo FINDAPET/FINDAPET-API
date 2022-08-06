@@ -21,6 +21,8 @@ final class CreateUser: AsyncMigration {
             .field("avatar_path", .string)
             .field("document_path", .string)
             .field("description", .string)
+            .field("is_cattery_wait_verify", .bool)
+            .field("is_admin", .bool)
             .unique(on: "email")
             .create()
     }
