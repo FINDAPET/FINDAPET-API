@@ -8,6 +8,7 @@
 import Foundation
 import NIOFoundationCompat
 import Vapor
+import APNS
 
 struct UserController: RouteCollection {
     
@@ -101,8 +102,7 @@ struct UserController: RouteCollection {
             throw Abort(.badRequest)
         }
         
-        guard let cattery = try await User.find(req.parameters.get("userID"), on: req.db),
-              WebSocketManager.shared.catteryWebSockets.contains(where: { $0.cattery.id == cattery.id }) else {
+        guard let cattery = try await User.find(req.parameters.get("userID"), on: req.db) else {
             throw Abort(.notFound)
         }
         
@@ -111,7 +111,9 @@ struct UserController: RouteCollection {
         
         try await cattery.save(on: req.db)
         
-        WebSocketManager.shared.sendMessageCatteryWebSocket(cattery: cattery, message: "aprooved")
+        if let deviceToken = cattery.deviceToken {
+            try req.apns.send(.init(title: "Your cattery is confirmed"), to: deviceToken).wait()
+        }
         
         return .ok
     }
@@ -608,7 +610,7 @@ struct UserController: RouteCollection {
         }
         
         if let avatarData = newUser.avatarData,
-           let avatarPath = oldUser.avatarPath != nil ? oldUser.avatarPath : req.application.directory.publicDirectory.appending(UUID().uuidString) {
+           let avatarPath = oldUser.avatarPath != nil && oldUser.avatarPath != "" ? oldUser.avatarPath : req.application.directory.publicDirectory.appending(UUID().uuidString) {
             try await req.fileio.writeFile(ByteBuffer(data: avatarData), at: avatarPath)
             
             oldUser.avatarPath = avatarPath
@@ -624,6 +626,7 @@ struct UserController: RouteCollection {
         oldUser.name = newUser.name
         oldUser.description = newUser.description
         oldUser.isCatteryWaitVerify = newUser.isCatteryWaitVerify
+        oldUser.deviceToken = newUser.deviceToken
         
         try await oldUser.save(on: req.db)
         

@@ -37,6 +37,9 @@ final class User: Model, Content {
     @Field(key: "is_admin")
     var isAdmin: Bool
     
+    @OptionalField(key: "device_token")
+    var deviceToken: String?
+    
     @OptionalField(key: "avatar_path")
     var avatarPath: String?
     
@@ -63,7 +66,7 @@ final class User: Model, Content {
     
     init() { }
     
-    init(id: UUID? = nil, email: String, passwordHash: String, name: String = "", isActiveCattery: Bool = false, avatarPath: String? = nil, documentPath: String? = nil, description: String? = nil, chatsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), isCatteryWaitVerify: Bool = false, isAdmin: Bool = false) {
+    init(id: UUID? = nil, email: String, passwordHash: String, name: String = "", isActiveCattery: Bool = false, avatarPath: String? = nil, documentPath: String? = nil, description: String? = nil, chatsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), isCatteryWaitVerify: Bool = false, isAdmin: Bool = false, deviceToken: String? = nil) {
         self.id = id
         self.email = email
         self.passwordHash = passwordHash
@@ -75,6 +78,7 @@ final class User: Model, Content {
         self.chatsID = chatsID
         self.isCatteryWaitVerify = isCatteryWaitVerify
         self.isAdmin = isAdmin
+        self.deviceToken = deviceToken
     }
     
 }
@@ -117,15 +121,17 @@ extension User {
         var avatarData: Data?
         var documentData: Data?
         var description: String?
+        var deviceToken: String?
         var isCatteryWaitVerify: Bool
         
-        init(id: UUID? = nil, name: String = "", avatarData: Data? = nil, documentData: Data? = nil, description: String? = nil, isCatteryWaitVerify: Bool = false) {
+        init(id: UUID? = nil, name: String = "", avatarData: Data? = nil, documentData: Data? = nil, description: String? = nil, isCatteryWaitVerify: Bool = false, deviceToken: String? = nil) {
             self.id = id
             self.name = name
             self.avatarData = avatarData
             self.documentData = documentData
             self.description = description
             self.isCatteryWaitVerify = isCatteryWaitVerify
+            self.deviceToken = deviceToken
         }
     }
 }

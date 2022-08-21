@@ -8,6 +8,7 @@
 import Foundation
 import NIOFoundationCompat
 import Vapor
+import APNS
 
 struct DealController: RouteCollection {
     
@@ -81,6 +82,10 @@ struct DealController: RouteCollection {
         guard let deal = try await Deal.find(req.parameters.get("dealID"), on: req.db) else {
             throw Abort(.notFound)
         }
+        
+        deal.viewsCount += 1
+        
+        try await deal.save(on: req.db)
         
         let cattery = try await deal.$cattery.get(on: req.db)
         let buyer = try await deal.$buyer.get(on: req.db)
@@ -251,17 +256,20 @@ struct DealController: RouteCollection {
     private func sold(req: Request) async throws -> HTTPStatus {
         guard try req.auth.require(User.self).isActiveCattery,
               let deal = try await Deal.find(req.parameters.get("dealID"), on: req.db),
-              let offer = try await Offer.find(req.parameters.get("offerID"), on: req.db),
-              let buyerID = try await offer.$buyer.get(on: req.db).id else {
+              let offer = try await Offer.find(req.parameters.get("offerID"), on: req.db) else {
             throw Abort(.notFound)
         }
         
-        deal.$buyer.id = buyerID
+        let buyer = try await offer.$buyer.get(on: req.db)
+        
+        deal.$buyer.id = buyer.id
         deal.isActive = false
         
         try await deal.save(on: req.db)
         
-        WebSocketManager.shared.sendMessageOfferWeSocket(offer: offer, message: "you buy")
+        if let deviceToken = buyer.deviceToken {
+            try req.apns.send(.init(title: "You bought a pet"), to: deviceToken).wait()
+        }
         
         for deleteOffer in try await deal.$offers.get(on: req.db) {
             if deleteOffer.id != offer.id {

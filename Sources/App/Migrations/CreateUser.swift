@@ -23,6 +23,7 @@ final class CreateUser: AsyncMigration {
             .field("description", .string)
             .field("is_cattery_wait_verify", .bool)
             .field("is_admin", .bool)
+            .field("device_token", .string)
             .unique(on: "email")
             .create()
     }

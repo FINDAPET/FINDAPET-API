@@ -23,7 +23,7 @@ struct UserTokenController: RouteCollection {
     private func auth(req: Request) async throws -> UserToken.Output {
         let user = try req.auth.require(User.self)
         let token = try user.generateToken()
-        
+                
         try await token.save(on: req.db)
         
         return UserToken.Output(id: token.id, value: token.value, user: user)

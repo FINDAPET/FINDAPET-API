@@ -2,11 +2,32 @@ import Fluent
 import FluentPostgresDriver
 import Leaf
 import Vapor
+import APNS
 
 // configures your application
 public func configure(_ app: Application) throws {
+    let appleECP8PrivateKey =
+"""
+-----BEGIN PRIVATE KEY-----
+MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQg7RRS2oUF9Tpy1LPD
+WRSI+Pbo/pmBF6+lN13EiZ3vQ2egCgYIKoZIzj0DAQehRANCAATFl2B+xF3n3Jbt
+6EPAccB3JU5CzdO7aj3gJvyb9eShAK13/OoPNc/PCYucdNEdG8LsoBxd06EfNuBF
+Bz1VuMrd
+-----END PRIVATE KEY-----
+"""
+    
+    app.apns.configuration = try .init(
+        authenticationMethod: .jwt(
+            key: .private(pem: Data(appleECP8PrivateKey.utf8)),
+            keyIdentifier: "CX7HTV253D",
+            teamIdentifier: "FY2MUX2TBL"
+        ),
+        topic: "com.artemiy.FINDAPET-App",
+        environment: .production
+    )
+    
     // uncomment to serve files from /Public folder
-     app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
+    app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
 
     app.databases.use(.postgres(
         hostname: Environment.get("DATABASE_HOST") ?? "localhost",
@@ -17,6 +38,8 @@ public func configure(_ app: Application) throws {
     ), as: .psql)
     
     app.views.use(.leaf)
+    
+    app.routes.defaultMaxBodySize = "500mb"
 
     // register routes
     try routes(app)
