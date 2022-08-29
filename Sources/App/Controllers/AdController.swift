@@ -111,13 +111,8 @@ struct AdController: RouteCollection {
     }
     
     private func create(req: Request) async throws -> HTTPStatus {
-        let cattery = try req.auth.require(User.self)
         let ad = try req.content.decode(Ad.Input.self)
         let path = req.application.directory.publicDirectory.appending(UUID().uuidString)
-        
-        guard cattery.isActiveCattery else {
-            throw Abort(.badRequest)
-        }
         
         try await req.fileio.writeFile(ByteBuffer(data: ad.contentData), at: path)
         
@@ -168,7 +163,7 @@ struct AdController: RouteCollection {
     private func deactivate(req: Request) async throws -> HTTPStatus {
         let cattery = try req.auth.require(User.self)
         
-        guard cattery.isAdmin || cattery.isActiveCattery else {
+        guard cattery.isAdmin else {
             throw Abort(.badRequest)
         }
         
@@ -186,7 +181,7 @@ struct AdController: RouteCollection {
     private func activate(req: Request) async throws -> HTTPStatus {
         let cattery = try req.auth.require(User.self)
         
-        guard cattery.isAdmin || cattery.isActiveCattery else {
+        guard cattery.isAdmin else {
             throw Abort(.badRequest)
         }
         

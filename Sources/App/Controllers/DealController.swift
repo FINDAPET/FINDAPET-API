@@ -254,8 +254,9 @@ struct DealController: RouteCollection {
     }
     
     private func sold(req: Request) async throws -> HTTPStatus {
-        guard try req.auth.require(User.self).isActiveCattery,
-              let deal = try await Deal.find(req.parameters.get("dealID"), on: req.db),
+        _ = try req.auth.require(User.self)
+        
+        guard let deal = try await Deal.find(req.parameters.get("dealID"), on: req.db),
               let offer = try await Offer.find(req.parameters.get("offerID"), on: req.db) else {
             throw Abort(.notFound)
         }
@@ -285,7 +286,7 @@ struct DealController: RouteCollection {
         let deal = try req.content.decode(Deal.Input.self)
         var photoPaths = [String]()
         
-        guard user.isActiveCattery, deal.catteryID == user.id else {
+        guard deal.catteryID == user.id else {
             throw Abort(.badRequest)
         }
         
@@ -332,7 +333,7 @@ struct DealController: RouteCollection {
         let newDeal = try req.content.decode(Deal.Input.self)
         var photoPaths = [String]()
         
-        guard (user.isActiveCattery && newDeal.catteryID == user.id) || user.isAdmin else {
+        guard newDeal.catteryID == user.id || user.isAdmin else {
             throw Abort(.badRequest)
         }
         
@@ -382,7 +383,7 @@ struct DealController: RouteCollection {
         
         let cattery = try await deal.$cattery.get(on: req.db)
         
-        guard (user.isActiveCattery && cattery.id == user.id) || user.isAdmin else {
+        guard cattery.id == user.id || user.isAdmin else {
             throw Abort(.badRequest)
         }
         
@@ -402,7 +403,7 @@ struct DealController: RouteCollection {
         
         let cattery = try await deal.$cattery.get(on: req.db)
         
-        guard (user.isActiveCattery && cattery.id == user.id) || user.isAdmin else {
+        guard cattery.id == user.id || user.isAdmin else {
             throw Abort(.badRequest)
         }
         
@@ -422,7 +423,7 @@ struct DealController: RouteCollection {
         
         let cattery = try await deal.$cattery.get(on: req.db)
         
-        guard (user.isActiveCattery && cattery.id == user.id) || user.isAdmin else {
+        guard cattery.id == user.id || user.isAdmin else {
             throw Abort(.badRequest)
         }
         
