@@ -48,9 +48,10 @@ Bz1VuMrd
         CreateAd(),
         CreateDeal(),
         CreateUser(),
-        CreateChatRoom(),
         CreateUserToken(),
-        CreateOffer()
+        CreateOffer(),
+        CreateChatRoom(),
+        CreateMessage()
     )
     
     #if DEBUG

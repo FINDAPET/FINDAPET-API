@@ -24,6 +24,8 @@ final class CreateUser: AsyncMigration {
             .field("is_cattery_wait_verify", .bool)
             .field("is_admin", .bool)
             .field("device_token", .string)
+            .field("country_code", .string)
+            .field("chat_rooms_id", .array(of: .uuid))
             .unique(on: "email")
             .create()
     }

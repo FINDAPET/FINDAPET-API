@@ -16,22 +16,43 @@ final class ChatRoom: Model, Content {
     @ID(key: .id)
     var id: UUID?
     
+    @Field(key: "users_id")
+    var usersID: [User.IDValue]
+    
+    @Children(for: \.$chatRoom)
+    var messages: [Message]
+    
     init() { }
     
-    init(id: UUID? = nil) {
+    init(id: UUID? = nil, usersID: [User.IDValue] = [User.IDValue]()) {
         self.id = id
+        self.usersID = usersID
     }
     
 }
 
 extension ChatRoom {
     struct Input: Content {
+        var id: UUID?
+        var usersID: [UUID]
         
+        init(id: UUID? = nil, usersID: [User.IDValue] = [User.IDValue]()) {
+            self.id = id
+            self.usersID = usersID
+        }
     }
 }
 
 extension ChatRoom {
     struct Output: Content {
-        
+        var id: UUID?
+        var users: [User.Output]
+        var messages: [Message.Output]
+    }
+}
+
+extension ChatRoom: Equatable {
+    static func == (lhs: ChatRoom, rhs: ChatRoom) -> Bool {
+        lhs.id == rhs.id
     }
 }

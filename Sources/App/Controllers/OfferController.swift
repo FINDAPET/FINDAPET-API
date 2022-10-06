@@ -15,7 +15,7 @@ struct OfferController: RouteCollection {
         let offers = routes.grouped("offers")
         let userTokenProtected = offers.grouped(UserToken.authenticator())
         
-        userTokenProtected.webSocket("new", onUpgrade: self.create(req:ws:))
+        userTokenProtected.post("new", use: self.create(req:))
         userTokenProtected.delete(":offerID", "delete", use: self.delete(req:))
         userTokenProtected.get("all", "admin", use: self.index(req:))
     }
@@ -60,7 +60,8 @@ struct OfferController: RouteCollection {
                     boughtDeals: [Deal.Output](),
                     ads: [Ad.Output](),
                     myOffers: [Offer.Output](),
-                    offers: [Offer.Output]()
+                    offers: [Offer.Output](),
+                    chatRooms: [ChatRoom.Output]()
                 ),
                 deal: Deal.Output(
                     id: deal.id,
@@ -78,7 +79,15 @@ struct OfferController: RouteCollection {
                     age: deal.age,
                     color: deal.color,
                     price: deal.price,
-                    cattery: User.Output(name: "", deals: [Deal.Output](), boughtDeals: [Deal.Output](), ads: [Ad.Output](), myOffers: [Offer.Output](), offers: [Offer.Output]()),
+                    cattery: User.Output(
+                        name: String(),
+                        deals: [Deal.Output](),
+                        boughtDeals: [Deal.Output](),
+                        ads: [Ad.Output](),
+                        myOffers: [Offer.Output](),
+                        offers: [Offer.Output](),
+                        chatRooms: [ChatRoom.Output]()
+                    ),
                     country: deal.country,
                     city: deal.city,
                     description: deal.description,
@@ -101,7 +110,8 @@ struct OfferController: RouteCollection {
                     boughtDeals: [Deal.Output](),
                     ads: [Ad.Output](),
                     myOffers: [Offer.Output](),
-                    offers: [Offer.Output]()
+                    offers: [Offer.Output](),
+                    chatRooms: [ChatRoom.Output]()
                 )
             ))
         }
@@ -109,32 +119,26 @@ struct OfferController: RouteCollection {
         return offersOutput
     }
     
-    private func create(req: Request, ws: WebSocket) {
+    private func create(req: Request) async throws -> HTTPStatus {
         guard (try? req.auth.require(User.self)) != nil else {
-            print("❌ Error: unautorized.")
-
-            return
+            throw Abort(.unauthorized)
         }
         
-        ws.onBinary { ws, buffer in
-            guard let offerInput = try? JSONDecoder().decode(Offer.Input.self, from: buffer) else {
-                print("❌ Error: decoding failed.")
-                
-                return
-            }
-            
-            guard offerInput.catteryID != offerInput.buyerID else {
-                print("❌ Error: illegal.")
-                
-                return
-            }
-            
-            let offer = Offer(buyerID: offerInput.buyerID, dealID: offerInput.dealID, catteryID: offerInput.catteryID)
-            
-            offer.save(on: req.db).whenSuccess {
-                WebSocketManager.shared.addOfferWebSocket(offer: offer, webSocket: ws)
-            }
+        guard let offerInput = try? req.content.decode(Offer.Input.self) else {
+            throw Abort(.badRequest)
         }
+        
+        guard offerInput.catteryID != offerInput.buyerID else {
+            throw Abort(.badRequest)
+        }
+        
+        try await Offer(
+            buyerID: offerInput.buyerID,
+            dealID: offerInput.dealID,
+            catteryID: offerInput.catteryID
+        ).save(on: req.db)
+        
+        return .ok
     }
     
     private func delete(req: Request) async throws -> HTTPStatus {
@@ -145,9 +149,7 @@ struct OfferController: RouteCollection {
         }
         
         try await offer.delete(on: req.db)
-        
-        WebSocketManager.shared.removeOfferWebSocket(offer: offer)
-        
+                
         return .ok
     }
     

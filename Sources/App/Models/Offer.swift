@@ -60,3 +60,9 @@ extension Offer {
         var cattery: User.Output
     }
 }
+
+extension Offer: Equatable {
+    static func == (lhs: Offer, rhs: Offer) -> Bool {
+        lhs.id == rhs.id
+    }
+}

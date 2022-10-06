@@ -58,7 +58,8 @@ struct AdController: RouteCollection {
                     boughtDeals: [Deal.Output](),
                     ads: [Ad.Output](),
                     myOffers: [Offer.Output](),
-                    offers: [Offer.Output]()
+                    offers: [Offer.Output](),
+                    chatRooms: [ChatRoom.Output]()
                 )
             ))
         }
@@ -102,7 +103,8 @@ struct AdController: RouteCollection {
                     boughtDeals: [Deal.Output](),
                     ads: [Ad.Output](),
                     myOffers: [Offer.Output](),
-                    offers: [Offer.Output]()
+                    offers: [Offer.Output](),
+                    chatRooms: [ChatRoom.Output]()
                 )
             ))
         }

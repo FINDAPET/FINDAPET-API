@@ -37,6 +37,12 @@ final class User: Model, Content {
     @Field(key: "is_admin")
     var isAdmin: Bool
     
+    @Field(key: "chat_rooms_id")
+    var chatRoomsID: [ChatRoom.IDValue]
+    
+    @OptionalField(key: "county_code")
+    var countryCode: String?
+    
     @OptionalField(key: "device_token")
     var deviceToken: String?
     
@@ -66,7 +72,7 @@ final class User: Model, Content {
     
     init() { }
     
-    init(id: UUID? = nil, email: String, passwordHash: String, name: String = "", isActiveCattery: Bool = false, avatarPath: String? = nil, documentPath: String? = nil, description: String? = nil, chatsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), isCatteryWaitVerify: Bool = false, isAdmin: Bool = false, deviceToken: String? = nil) {
+    init(id: UUID? = nil, email: String, passwordHash: String, name: String = "", isActiveCattery: Bool = false, avatarPath: String? = nil, documentPath: String? = nil, description: String? = nil, chatsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), isCatteryWaitVerify: Bool = false, isAdmin: Bool = false, deviceToken: String? = nil, chatRoomsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), countryCode: String? = nil) {
         self.id = id
         self.email = email
         self.passwordHash = passwordHash
@@ -79,6 +85,8 @@ final class User: Model, Content {
         self.isCatteryWaitVerify = isCatteryWaitVerify
         self.isAdmin = isAdmin
         self.deviceToken = deviceToken
+        self.chatRoomsID = chatRoomsID
+        self.countryCode = countryCode
     }
     
 }
@@ -123,8 +131,10 @@ extension User {
         var description: String?
         var deviceToken: String?
         var isCatteryWaitVerify: Bool
+        var chatRoomsID: [ChatRoom.IDValue]
+        var countryCode: String?
         
-        init(id: UUID? = nil, name: String = "", avatarData: Data? = nil, documentData: Data? = nil, description: String? = nil, isCatteryWaitVerify: Bool = false, deviceToken: String? = nil) {
+        init(id: UUID? = nil, name: String = "", avatarData: Data? = nil, documentData: Data? = nil, description: String? = nil, isCatteryWaitVerify: Bool = false, deviceToken: String? = nil, chatRoomsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), countryCode: String? = nil) {
             self.id = id
             self.name = name
             self.avatarData = avatarData
@@ -132,6 +142,8 @@ extension User {
             self.description = description
             self.isCatteryWaitVerify = isCatteryWaitVerify
             self.deviceToken = deviceToken
+            self.chatRoomsID = chatRoomsID
+            self.countryCode = countryCode
         }
     }
 }
@@ -148,5 +160,12 @@ extension User {
         var ads: [Ad.Output]
         var myOffers: [Offer.Output]
         var offers: [Offer.Output]
+        var chatRooms: [ChatRoom.Output]
+    }
+}
+
+extension User: Equatable {
+    static func == (lhs: User, rhs: User) -> Bool {
+        lhs.id == rhs.id
     }
 }

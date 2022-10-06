@@ -60,7 +60,15 @@ struct DealController: RouteCollection {
                 age: deal.age,
                 color: deal.color,
                 price: deal.price,
-                cattery: User.Output(name: "", deals: [Deal.Output](), boughtDeals: [Deal.Output](), ads: [Ad.Output](), myOffers: [Offer.Output](), offers: [Offer.Output]()),
+                cattery: User.Output(
+                    name: String(),
+                    deals: [Deal.Output](),
+                    boughtDeals: [Deal.Output](),
+                    ads: [Ad.Output](),
+                    myOffers: [Offer.Output](),
+                    offers: [Offer.Output](),
+                    chatRooms: [ChatRoom.Output]()
+                ),
                 country: deal.country,
                 city: deal.city,
                 description: deal.description,
@@ -128,7 +136,8 @@ struct DealController: RouteCollection {
                     boughtDeals: [Deal.Output](),
                     ads: [Ad.Output](),
                     myOffers: [Offer.Output](),
-                    offers: [Offer.Output]()
+                    offers: [Offer.Output](),
+                    chatRooms: [ChatRoom.Output]()
                 ),
                 deal: Deal.Output(
                     id: deal.id,
@@ -156,7 +165,8 @@ struct DealController: RouteCollection {
                         boughtDeals: [Deal.Output](),
                         ads: [Ad.Output](),
                         myOffers: [Offer.Output](),
-                        offers: [Offer.Output]()
+                        offers: [Offer.Output](),
+                        chatRooms: [ChatRoom.Output]()
                     ),
                     country: deal.country,
                     city: deal.city,
@@ -177,7 +187,8 @@ struct DealController: RouteCollection {
                         boughtDeals: [Deal.Output](),
                         ads: [Ad.Output](),
                         myOffers: [Offer.Output](),
-                        offers: [Offer.Output]()
+                        offers: [Offer.Output](),
+                        chatRooms: [ChatRoom.Output]()
                     ),
                     offers: [Offer.Output]()
                 ),
@@ -191,7 +202,8 @@ struct DealController: RouteCollection {
                     boughtDeals: [Deal.Output](),
                     ads: [Ad.Output](),
                     myOffers: [Offer.Output](),
-                    offers: [Offer.Output]()
+                    offers: [Offer.Output](),
+                    chatRooms: [ChatRoom.Output]()
                 )
             ))
         }
@@ -222,7 +234,8 @@ struct DealController: RouteCollection {
                 boughtDeals: [Deal.Output](),
                 ads: [Ad.Output](),
                 myOffers: [Offer.Output](),
-                offers: [Offer.Output]()
+                offers: [Offer.Output](),
+                chatRooms: [ChatRoom.Output]()
             ),
             country: deal.country,
             city: deal.city,
@@ -243,7 +256,8 @@ struct DealController: RouteCollection {
                 boughtDeals: [Deal.Output](),
                 ads: [Ad.Output](),
                 myOffers: [Offer.Output](),
-                offers: [Offer.Output]()
+                offers: [Offer.Output](),
+                chatRooms: [ChatRoom.Output]()
             ),
             offers: offersOutput
         )
@@ -269,7 +283,7 @@ struct DealController: RouteCollection {
         try await deal.save(on: req.db)
         
         if let deviceToken = buyer.deviceToken {
-            try req.apns.send(.init(title: "You bought a pet"), to: deviceToken).wait()
+            try? req.apns.send(.init(title: "You bought a pet"), to: deviceToken).wait()
         }
         
         for deleteOffer in try await deal.$offers.get(on: req.db) {
