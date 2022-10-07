@@ -40,7 +40,7 @@ final class User: Model, Content {
     @Field(key: "chat_rooms_id")
     var chatRoomsID: [ChatRoom.IDValue]
     
-    @OptionalField(key: "county_code")
+    @OptionalField(key: "country_code")
     var countryCode: String?
     
     @OptionalField(key: "device_token")

@@ -19,7 +19,7 @@ struct ChatRoomController: RouteCollection {
         userTokenProtected.get(":chatRoomID", use: self.chatRoom(req:))
         userTokenProtected.post("new", use: self.create(req:))
         userTokenProtected.put("change", use: self.change(req:))
-        userTokenProtected.delete("delete", use: self.delete(req:))
+        userTokenProtected.delete("delete", ":chatRoomID", use: self.delete(req:))
     }
     
     private func index(req: Request) async throws -> [ChatRoom] {
@@ -159,11 +159,17 @@ struct ChatRoomController: RouteCollection {
     }
     
     private func create(req: Request) async throws -> HTTPStatus {
-        _ = try req.auth.require(User.self)
-        let chatRoom = try req.content.decode(ChatRoom.Input.self)
+        let user = try req.auth.require(User.self)
+        var chatRoom = try req.content.decode(ChatRoom.Input.self)
         
         try await ChatRoom(usersID: chatRoom.usersID).save(on: req.db)
         
+        if let chatRoomID = try await ChatRoom.query(on: req.db).all().filter({ $0.usersID == chatRoom.usersID }).first?.id {
+            user.chatRoomsID.append(chatRoomID)
+            
+            try await user.save(on: req.db)
+        }
+                
         return .ok
     }
     
