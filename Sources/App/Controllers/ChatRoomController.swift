@@ -160,7 +160,7 @@ struct ChatRoomController: RouteCollection {
     
     private func create(req: Request) async throws -> HTTPStatus {
         let user = try req.auth.require(User.self)
-        var chatRoom = try req.content.decode(ChatRoom.Input.self)
+        let chatRoom = try req.content.decode(ChatRoom.Input.self)
         
         try await ChatRoom(usersID: chatRoom.usersID).save(on: req.db)
         
