@@ -19,10 +19,16 @@ final class ChatRoomWebSocketManager {
     static let shared = ChatRoomWebSocketManager([ChatRoomWebSocket]())
     
     func addChatRoomWebSocket(id: UUID?, userWebSockets: [UserWebSocket] = [UserWebSocket]()) {
-        self.chatRoomWebSockets.append(ChatRoomWebSocket(id: id, users: userWebSockets))
+        if !self.chatRoomWebSockets.contains(where: { $0.id == id }) {
+            self.chatRoomWebSockets.append(ChatRoomWebSocket(id: id, users: userWebSockets))
+        }
     }
     
     func addUserWebSocketInChatRoom(chatRoomID: UUID?, userID: UUID?, ws: WebSocket) {
+        if !self.chatRoomWebSockets.contains(where: { $0.id == chatRoomID }) {
+            self.chatRoomWebSockets.append(ChatRoomWebSocket(id: chatRoomID, users: [UserWebSocket(id: userID, ws: ws)]))
+        }
+        
         for i in 0 ..< self.chatRoomWebSockets.count {
             if self.chatRoomWebSockets[i].id == chatRoomID {
                 if !self.chatRoomWebSockets[i].users.contains(where: { $0.id == userID }) {
