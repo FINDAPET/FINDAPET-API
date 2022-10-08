@@ -36,6 +36,7 @@ struct UserController: RouteCollection {
         userTokenProtected.get("all", "catteryes", "wait", "admin", use: self.indexWaitVerify(req:))
         userTokenProtected.put(":userID", "approove", "cattery", "admin", use: self.aprooveCatteryVerify(req:))
         userTokenProtected.put(":userID", "delete", "cattery", "admin", use: self.deleteCatteryVerify(req:))
+        userTokenProtected.webSocket("update", onUpgrade: self.userWebSocket(req:ws:))
     }
     
     private func index(req: Request) async throws -> [User.Output] {
@@ -942,6 +943,22 @@ struct UserController: RouteCollection {
         try await user.delete(on: req.db)
         
         return .ok
+    }
+    
+    private func userWebSocket(req: Request, ws: WebSocket) async {
+        guard let userID = try? req.auth.require(User.self).id else {
+            print("❌ Error: not authorized.")
+            
+            try? await ws.close()
+            
+            return
+        }
+        
+        ws.onClose.whenSuccess {
+            UserWebSocketManager.shared.removeUserWebSocket(id: userID)
+        }
+        
+        UserWebSocketManager.shared.addUserWebSocket(id: userID, ws: ws)
     }
     
 }

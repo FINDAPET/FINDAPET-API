@@ -19,7 +19,7 @@ struct ChatRoomController: RouteCollection {
         userTokenProtected.get(":chatRoomID", use: self.chatRoom(req:))
         userTokenProtected.post("new", use: self.create(req:))
         userTokenProtected.put("change", use: self.change(req:))
-        userTokenProtected.webSocket(":userID", onUpgrade: self.chatRoomWebSocket(req:ws:))
+        userTokenProtected.webSocket("with", ":userID", onUpgrade: self.chatRoomWebSocket(req:ws:))
         userTokenProtected.delete("delete", ":chatRoomID", use: self.delete(req:))
     }
     
@@ -230,7 +230,7 @@ struct ChatRoomController: RouteCollection {
             return
         }
         
-        guard var chatRooms = try? await ChatRoom.query(on: req.db).all() else {
+        guard let chatRooms = try? await ChatRoom.query(on: req.db).all() else {
             print("❌ Error: not found.")
             
             try? await ws.close()
@@ -261,6 +261,15 @@ struct ChatRoomController: RouteCollection {
             if ChatRoomWebSocketManager.shared.chatRoomWebSockets.filter({ $0.id == chatRoomID }).first?.users.count ?? 2 < 2 {
                 if let deviceToken = firstUser.deviceToken {
                     try? req.apns.send(.init(title: firstUser.name, subtitle: "Sent you a new message"), to: deviceToken).wait()
+                }
+            } else {
+                for userWebSocket in ChatRoomWebSocketManager.shared.chatRoomWebSockets
+                    .filter({ $0.id == chatRoomID }).first?.users ?? [UserWebSocket]() {
+                    if userWebSocket.id == secondUserID {
+                        try? await userWebSocket.ws.send([UInt8](buffer: buffer))
+                        try? await UserWebSocketManager.shared.userWebSockets
+                            .filter { $0.id == secondUserID }.first?.ws.send("update")
+                    }
                 }
             }
         }
