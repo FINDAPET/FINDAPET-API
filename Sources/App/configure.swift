@@ -6,23 +6,14 @@ import APNS
 
 // configures your application
 public func configure(_ app: Application) throws {
-    let appleECP8PrivateKey =
-"""
------BEGIN PRIVATE KEY-----
-MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQg7RRS2oUF9Tpy1LPD
-WRSI+Pbo/pmBF6+lN13EiZ3vQ2egCgYIKoZIzj0DAQehRANCAATFl2B+xF3n3Jbt
-6EPAccB3JU5CzdO7aj3gJvyb9eShAK13/OoPNc/PCYucdNEdG8LsoBxd06EfNuBF
-Bz1VuMrd
------END PRIVATE KEY-----
-"""
     
     app.apns.configuration = try .init(
         authenticationMethod: .jwt(
             key: .private(pem: Data(appleECP8PrivateKey.utf8)),
-            keyIdentifier: "CX7HTV253D",
-            teamIdentifier: "FY2MUX2TBL"
+            keyIdentifier: keyIdentifier,
+            teamIdentifier: teamIdentifier
         ),
-        topic: "com.artemiy.FINDAPET-App",
+        topic: topic,
         environment: .production
     )
     
