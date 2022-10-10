@@ -39,8 +39,8 @@ struct DealController: RouteCollection {
             var photoDatas = [Data]()
             
             for photoPath in deal.photoPaths {
-                if let buffer = try? await req.fileio.collectFile(at: photoPath) {
-                    photoDatas.append(Data(buffer: buffer))
+                if let data = try? await FileManager.get(req: req, with: photoPath) {
+                    photoDatas.append(data)
                 }
             }
             
@@ -102,17 +102,17 @@ struct DealController: RouteCollection {
         var catteryAvatarData: Data?
         var buyerAvatarData: Data?
         
-        if let path = cattery.avatarPath, let buffer = try? await req.fileio.collectFile(at: path) {
-            catteryAvatarData = Data(buffer: buffer)
+        if let path = cattery.avatarPath {
+            catteryAvatarData = try? await FileManager.get(req: req, with: path)
         }
         
-        if let path = buyer?.avatarPath, let buffer = try? await req.fileio.collectFile(at: path) {
-            buyerAvatarData = Data(buffer: buffer)
+        if let path = buyer?.avatarPath {
+            buyerAvatarData = try? await FileManager.get(req: req, with: path)
         }
         
         for photoPath in deal.photoPaths {
-            if let buffer = try? await req.fileio.collectFile(at: photoPath) {
-                photoDatas.append(Data(buffer: buffer))
+            if let data = try? await FileManager.get(req: req, with: photoPath) {
+                photoDatas.append(data)
             }
         }
         
@@ -120,8 +120,8 @@ struct DealController: RouteCollection {
             let offerBuyer = try await offer.$buyer.get(on: req.db)
             var offerBuyerAvatarData: Data?
             
-            if let path = offerBuyer.avatarPath, let buffer = try? await req.fileio.collectFile(at: path) {
-                offerBuyerAvatarData = Data(buffer: buffer)
+            if let path = offerBuyer.avatarPath {
+                offerBuyerAvatarData = try? await FileManager.get(req: req, with: path)
             }
             
             offersOutput.append(Offer.Output(

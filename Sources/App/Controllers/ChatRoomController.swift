@@ -65,9 +65,8 @@ struct ChatRoomController: RouteCollection {
                     if let chatUser = try? await User.find(userID, on: req.db) {
                         var avatarData: Data?
                         
-                        if let path = chatUser.avatarPath,
-                           let buffer = try? await req.fileio.collectFile(at: path) {
-                            avatarData = Data(buffer: buffer)
+                        if let path = chatUser.avatarPath {
+                            avatarData = try? await FileManager.get(req: req, with: path)
                         }
                         
                         users.append(User.Output(
@@ -133,9 +132,8 @@ struct ChatRoomController: RouteCollection {
             if let chatUser = try? await User.find(userID, on: req.db) {
                 var avatarData: Data?
                 
-                if let path = chatUser.avatarPath,
-                   let buffer = try? await req.fileio.collectFile(at: path) {
-                    avatarData = Data(buffer: buffer)
+                if let path = chatUser.avatarPath {
+                    avatarData = try? await FileManager.get(req: req, with: path)
                 }
                 
                 users.append(User.Output(
@@ -256,7 +254,25 @@ struct ChatRoomController: RouteCollection {
         }
         
         ws.onBinary { ws, buffer in
-            try? await JSONDecoder().decode(Message.self, from: buffer).save(on: req.db)
+            var path: String?
+            
+            guard let input = try? JSONDecoder().decode(Message.Input.self, from: buffer) else {
+                print("❌ Error: deconding failed.")
+                
+                return
+            }
+            
+            if let data = input.bodyData {
+                let newPath = req.application.directory.publicDirectory.appending(UUID().uuidString)
+                
+                try? await req.fileio.writeFile(ByteBuffer(data: data), at: newPath)
+                
+                path = newPath
+            }
+            
+            let message = Message(text: input.text, bodyPath: path, userID: input.userID, chatRoomID: chatRoomID)
+            
+            try? await message.save(on: req.db)
             
             if ChatRoomWebSocketManager.shared.chatRoomWebSockets.filter({ $0.id == chatRoomID }).first?.users.count ?? 2 < 2 {
                 if let deviceToken = firstUser.deviceToken {
@@ -265,13 +281,17 @@ struct ChatRoomController: RouteCollection {
             } else {
                 for userWebSocket in ChatRoomWebSocketManager.shared.chatRoomWebSockets
                     .filter({ $0.id == chatRoomID }).first?.users ?? [UserWebSocket]() {
-                    if userWebSocket.id == secondUserID {
-                        try? await userWebSocket.ws.send([UInt8](buffer: buffer))
+                    if userWebSocket.id == secondUserID, let data = try? JSONEncoder().encode(message){
+                        try? await userWebSocket.ws.send([UInt8](data))
                         try? await UserWebSocketManager.shared.userWebSockets
                             .filter { $0.id == secondUserID }.first?.ws.send("update")
                     }
                 }
             }
+        }
+        
+        ws.onText { ws, text in
+            try? await ws.send("❌ Error: text doesn't support for this connection.")
         }
         
         ChatRoomWebSocketManager.shared.addUserWebSocketInChatRoom(chatRoomID: chatRoomID, userID: firstUserID, ws: ws)

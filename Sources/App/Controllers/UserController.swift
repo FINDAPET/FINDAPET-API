@@ -51,12 +51,12 @@ struct UserController: RouteCollection {
             var avatarData: Data?
             var documentData: Data?
             
-            if let path = user.avatarPath, let buffer = try? await req.fileio.collectFile(at: path) {
-                avatarData = Data(buffer: buffer)
+            if let path = user.avatarPath {
+                avatarData = try? await FileManager.get(req: req, with: path)
             }
             
-            if let path = user.documentPath, let buffer = try? await req.fileio.collectFile(at: path) {
-                documentData = Data(buffer: buffer)
+            if let path = user.documentPath {
+                documentData = try? await FileManager.get(req: req, with: path)
             }
             
             usersOutput.append(User.Output(
@@ -127,12 +127,12 @@ struct UserController: RouteCollection {
             var avatarData: Data?
             var documentData: Data?
             
-            if let path = user.avatarPath, let buffer = try? await req.fileio.collectFile(at: path) {
-                avatarData = Data(buffer: buffer)
+            if let path = user.avatarPath {
+                avatarData = try? await FileManager.get(req: req, with: path)
             }
             
-            if let path = user.documentPath, let buffer = try? await req.fileio.collectFile(at: path) {
-                documentData = Data(buffer: buffer)
+            if let path = user.documentPath {
+                documentData = try? await FileManager.get(req: req, with: path)
             }
             
             usersOutput.append(User.Output(
@@ -165,12 +165,12 @@ struct UserController: RouteCollection {
             var avatarData: Data?
             var documentData: Data?
             
-            if let path = user.avatarPath, let buffer = try? await req.fileio.collectFile(at: path) {
-                avatarData = Data(buffer: buffer)
+            if let path = user.avatarPath {
+                avatarData = try? await FileManager.get(req: req, with: path)
             }
             
-            if let path = user.documentPath, let buffer = try? await req.fileio.collectFile(at: path) {
-                documentData = Data(buffer: buffer)
+            if let path = user.documentPath {
+                documentData = try? await FileManager.get(req: req, with: path)
             }
             
             usersOutput.append(User.Output(
@@ -203,12 +203,12 @@ struct UserController: RouteCollection {
             var avatarData: Data?
             var documentData: Data?
             
-            if let path = user.avatarPath, let buffer = try? await req.fileio.collectFile(at: path) {
-                avatarData = Data(buffer: buffer)
+            if let path = user.avatarPath {
+                avatarData = try? await FileManager.get(req: req, with: path)
             }
             
-            if let path = user.documentPath, let buffer = try? await req.fileio.collectFile(at: path) {
-                documentData = Data(buffer: buffer)
+            if let path = user.documentPath {
+                documentData = try? await FileManager.get(req: req, with: path)
             }
             
             usersOutput.append(User.Output(
@@ -242,20 +242,20 @@ struct UserController: RouteCollection {
         var myOffers = [Offer.Output]()
         var offers = [Offer.Output]()
         
-        if let path = user.avatarPath, let buffer = try? await req.fileio.collectFile(at: path) {
-            avatarData = Data(buffer: buffer)
+        if let path = user.avatarPath {
+            avatarData = try? await FileManager.get(req: req, with: path)
         }
         
-        if let path = user.documentPath, let buffer = try? await req.fileio.collectFile(at: path) {
-            documentData = Data(buffer: buffer)
+        if let path = user.documentPath {
+            documentData = try? await FileManager.get(req: req, with: path)
         }
         
         for deal in try await user.$deals.get(on: req.db) {
             var photoDatas = [Data]()
             
             for photoPath in deal.photoPaths {
-                if let buffer = try? await req.fileio.collectFile(at: photoPath) {
-                    photoDatas.append(Data(buffer: buffer))
+                if let data = try? await FileManager.get(req: req, with: photoPath) {
+                    photoDatas.append(data)
                 }
             }
             
@@ -302,8 +302,8 @@ struct UserController: RouteCollection {
             var photoDatas = [Data]()
             
             for photoPath in deal.photoPaths {
-                if let buffer = try? await req.fileio.collectFile(at: photoPath) {
-                    photoDatas.append(Data(buffer: buffer))
+                if let data = try? await FileManager.get(req: req, with: photoPath) {
+                    photoDatas.append(data)
                 }
             }
             
@@ -347,10 +347,10 @@ struct UserController: RouteCollection {
         }
         
         for ad in try await user.$ads.get(on: req.db) {
-            if let buffer = try? await req.fileio.collectFile(at: ad.contentPath) {
+            if let data = try? await FileManager.get(req: req, with: ad.contentPath) {
                 ads.append(Ad.Output(
                     id: ad.id,
-                    contentData: Data(buffer: buffer),
+                    contentData: data,
                     custromerName: ad.custromerName,
                     link: ad.link,
                     cattery: User.Output(
@@ -372,12 +372,12 @@ struct UserController: RouteCollection {
             var dealPhotoData: Data?
             var buyerAvatarData: Data?
             
-            if let path = buyer.avatarPath, let buffer = try? await req.fileio.collectFile(at: path) {
-                dealPhotoData = Data(buffer: buffer)
+            if let path = buyer.avatarPath {
+                dealPhotoData = try? await FileManager.get(req: req, with: path)
             }
             
-            if let path = deal.photoPaths.first, let buffer = try? await req.fileio.collectFile(at: path) {
-                buyerAvatarData = Data(buffer: buffer)
+            if let path = deal.photoPaths.first {
+                buyerAvatarData = try? await FileManager.get(req: req, with: path)
             }
             
             offers.append(Offer.Output(
@@ -433,12 +433,12 @@ struct UserController: RouteCollection {
             var dealPhotoData: Data?
             var buyerAvatarData: Data?
             
-            if let path = buyer.avatarPath, let buffer = try? await req.fileio.collectFile(at: path) {
-                dealPhotoData = Data(buffer: buffer)
+            if let path = buyer.avatarPath {
+                dealPhotoData = try? await FileManager.get(req: req, with: path)
             }
             
-            if let path = deal.photoPaths.first, let buffer = try? await req.fileio.collectFile(at: path) {
-                buyerAvatarData = Data(buffer: buffer)
+            if let path = deal.photoPaths.first {
+                buyerAvatarData = try? await FileManager.get(req: req, with: path)
             }
             
             myOffers.append(Offer.Output(
@@ -515,20 +515,20 @@ struct UserController: RouteCollection {
         var offers = [Offer.Output]()
         var chatRooms = [ChatRoom.Output]()
         
-        if let path = user.avatarPath, let buffer = try? await req.fileio.collectFile(at: path) {
-            avatarData = Data(buffer: buffer)
+        if let path = user.avatarPath {
+            avatarData = try? await FileManager.get(req: req, with: path)
         }
         
-        if let path = user.documentPath, let buffer = try? await req.fileio.collectFile(at: path) {
-            documentData = Data(buffer: buffer)
+        if let path = user.documentPath {
+            documentData = try? await FileManager.get(req: req, with: path)
         }
         
         for deal in try await user.$deals.get(on: req.db) {
             var photoDatas = [Data]()
             
             for photoPath in deal.photoPaths {
-                if let buffer = try? await req.fileio.collectFile(at: photoPath) {
-                    photoDatas.append(Data(buffer: buffer))
+                if let data = try? await FileManager.get(req: req, with: photoPath) {
+                    photoDatas.append(data)
                 }
             }
             
@@ -575,8 +575,8 @@ struct UserController: RouteCollection {
             var photoDatas = [Data]()
             
             for photoPath in deal.photoPaths {
-                if let buffer = try? await req.fileio.collectFile(at: photoPath) {
-                    photoDatas.append(Data(buffer: buffer))
+                if let data = try? await FileManager.get(req: req, with: photoPath) {
+                    photoDatas.append(data)
                 }
             }
             
@@ -620,10 +620,10 @@ struct UserController: RouteCollection {
         }
         
         for ad in try await user.$ads.get(on: req.db) {
-            if let buffer = try? await req.fileio.collectFile(at: ad.contentPath) {
+            if let data = try? await FileManager.get(req: req, with: ad.contentPath) {
                 ads.append(Ad.Output(
                     id: ad.id,
-                    contentData: Data(buffer: buffer),
+                    contentData: data,
                     custromerName: ad.custromerName,
                     link: ad.link,
                     cattery: User.Output(
@@ -645,12 +645,12 @@ struct UserController: RouteCollection {
             var dealPhotoData: Data?
             var buyerAvatarData: Data?
             
-            if let path = buyer.avatarPath, let buffer = try? await req.fileio.collectFile(at: path) {
-                dealPhotoData = Data(buffer: buffer)
+            if let path = buyer.avatarPath {
+                dealPhotoData = try? await FileManager.get(req: req, with: path)
             }
             
-            if let path = deal.photoPaths.first, let buffer = try? await req.fileio.collectFile(at: path) {
-                buyerAvatarData = Data(buffer: buffer)
+            if let path = deal.photoPaths.first {
+                buyerAvatarData = try? await FileManager.get(req: req, with: path)
             }
             
             myOffers.append(Offer.Output(
@@ -708,12 +708,12 @@ struct UserController: RouteCollection {
             var dealPhotoData: Data?
             var buyerAvatarData: Data?
             
-            if let path = buyer.avatarPath, let buffer = try? await req.fileio.collectFile(at: path) {
-                dealPhotoData = Data(buffer: buffer)
+            if let path = buyer.avatarPath {
+                dealPhotoData = try? await FileManager.get(req: req, with: path)
             }
             
-            if let path = deal.photoPaths.first, let buffer = try? await req.fileio.collectFile(at: path) {
-                buyerAvatarData = Data(buffer: buffer)
+            if let path = deal.photoPaths.first {
+                buyerAvatarData = try? await FileManager.get(req: req, with: path)
             }
             
             offers.append(Offer.Output(
@@ -772,9 +772,16 @@ struct UserController: RouteCollection {
             if let chatRoom = try? await ChatRoom.find(chatRoomID, on: req.db) {
                 for message in (try? await chatRoom.$messages.get(on: req.db)) ?? [Message]() {
                     if let messageUser = try? await message.$user.get(on: req.db) {
+                        var bodyData: Data?
+                        
+                        if let path = message.bodyPath {
+                            bodyData = try? await FileManager.get(req: req, with: path)
+                        }
+                        
                         messages.append(Message.Output(
                             id: message.id,
                             text: message.text,
+                            bodyData: bodyData,
                             user: User.Output(
                                 id: messageUser.id,
                                 name: messageUser.name,
@@ -795,9 +802,8 @@ struct UserController: RouteCollection {
                     if let chatUser = try? await User.find(userID, on: req.db) {
                         var avatarData: Data?
                         
-                        if let path = chatUser.avatarPath,
-                           let buffer = try? await req.fileio.collectFile(at: path) {
-                            avatarData = Data(buffer: buffer)
+                        if let path = chatUser.avatarPath {
+                            avatarData = try? await FileManager.get(req: req, with: path)
                         }
                         
                         users.append(User.Output(

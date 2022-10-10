@@ -28,15 +28,31 @@ struct NotificationController: RouteCollection {
             for countryCode in notification.coutryCodes {
                 for user in try await User.query(on: req.db).all().filter({ $0.countryCode == countryCode }) {
                     if let deviceToken = user.deviceToken {
-                        try req.apns.send(.init(title: notification.title), to: deviceToken).wait()
+                        try? req.apns.send(.init(title: notification.title), to: deviceToken).wait()
                     }
                 }
             }
         } else {
             for user in try await User.query(on: req.db).all() {
                 if let deviceToken = user.deviceToken {
-                    try req.apns.send(.init(title: notification.title), to: deviceToken).wait()
+                    try? req.apns.send(.init(title: notification.title), to: deviceToken).wait()
                 }
+            }
+        }
+        
+        return .ok
+    }
+    
+    private func sendToUser(req: Request) async throws -> HTTPStatus {
+        guard try req.auth.require(User.self).isAdmin else {
+            throw Abort(.badRequest)
+        }
+        
+        let notification = try req.content.decode(Notification.self)
+        
+        for userID in notification.usersID {
+            if let deviceToken = try? await User.find(userID, on: req.db)?.deviceToken {
+                try? req.apns.send(.init(title: notification.title), to: deviceToken).wait()
             }
         }
         

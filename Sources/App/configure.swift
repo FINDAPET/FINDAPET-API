@@ -54,9 +54,9 @@ Bz1VuMrd
         CreateMessage()
     )
     
-//    #if DEBUG
-//    try app.autoRevert().wait()
-//    #endif
+    #if DEBUG
+    try app.autoRevert().wait()
+    #endif
     
     try app.autoMigrate().wait()
 }

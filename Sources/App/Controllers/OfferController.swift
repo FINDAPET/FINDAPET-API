@@ -36,16 +36,16 @@ struct OfferController: RouteCollection {
             var buyerPhotoData: Data?
             var catteryPhtotData: Data?
             
-            if let path = deal.photoPaths.first, let buffer = try? await req.fileio.collectFile(at: path) {
-                dealPhotoData = Data(buffer: buffer)
+            if let path = deal.photoPaths.first {
+                dealPhotoData = try? await FileManager.get(req: req, with: path)
             }
             
-            if let path = buyer.avatarPath, let buffer = try? await req.fileio.collectFile(at: path) {
-                buyerPhotoData = Data(buffer: buffer)
+            if let path = buyer.avatarPath {
+                buyerPhotoData = try? await FileManager.get(req: req, with: path)
             }
             
-            if let path = cattery.avatarPath, let buffer = try? await req.fileio.collectFile(at: path) {
-                catteryPhtotData = Data(buffer: buffer)
+            if let path = cattery.avatarPath {
+                catteryPhtotData = try? await FileManager.get(req: req, with: path)
             }
             
             offersOutput.append(Offer.Output(

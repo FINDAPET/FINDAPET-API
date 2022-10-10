@@ -27,6 +27,8 @@ final class ChatRoomWebSocketManager {
     func addUserWebSocketInChatRoom(chatRoomID: UUID?, userID: UUID?, ws: WebSocket) {
         if !self.chatRoomWebSockets.contains(where: { $0.id == chatRoomID }) {
             self.chatRoomWebSockets.append(ChatRoomWebSocket(id: chatRoomID, users: [UserWebSocket(id: userID, ws: ws)]))
+            
+            return
         }
         
         for i in 0 ..< self.chatRoomWebSockets.count {
@@ -36,16 +38,7 @@ final class ChatRoomWebSocketManager {
                 } else {
                     for j in 0 ..< self.chatRoomWebSockets[i].users.count {
                         if self.chatRoomWebSockets[i].users[j].id == userID {
-                            self.chatRoomWebSockets[i].users[j].ws.close().whenComplete { result in
-                                switch result {
-                                case .success(_):
-                                    self.chatRoomWebSockets[i].users[j].ws = ws
-                                case .failure(let error):
-                                    print("❌ Error: \(error.localizedDescription)")
-                                    
-                                    return
-                                }
-                            }
+                            self.chatRoomWebSockets[i].users[j].ws = ws
                         }
                     }
                 }
@@ -54,41 +47,13 @@ final class ChatRoomWebSocketManager {
     }
     
     func removeChatRoomWebSocket(id: UUID?) {
-        var indexes = [Int]()
-        
-        for i in 0 ..< self.chatRoomWebSockets.count {
-            if self.chatRoomWebSockets[i].id == id {
-                for user in self.chatRoomWebSockets[i].users {
-                    user.ws.close().whenFailure { print("❌ Error: \($0.localizedDescription)") }
-                }
-                
-                indexes.append(i)
-            }
-        }
-        
-        for index in indexes {
-            self.chatRoomWebSockets.remove(at: index)
-        }
+        self.chatRoomWebSockets.removeAll { $0.id == id }
     }
     
     func removeUserWebSocketInChatRoom(chatRoomID: UUID?, userID: UUID?) {
-        var indexes = [Int]()
-        
         for i in 0 ..< self.chatRoomWebSockets.count {
             if self.chatRoomWebSockets[i].id == chatRoomID {
-                for j in 0 ..< self.chatRoomWebSockets[i].users.count {
-                    if self.chatRoomWebSockets[i].users[j].id == userID {
-                        self.chatRoomWebSockets[i].users[j].ws.close().whenFailure { print("❌ Error: \($0.localizedDescription)") }
-                    }
-                    
-                    indexes.append(j)
-                }
-                
-                for index in indexes {
-                    self.chatRoomWebSockets[i].users.remove(at: index)
-                }
-                
-                indexes = [Int]()
+                self.chatRoomWebSockets[i].users.removeAll(where: { $0.id == userID })
             }
         }
     }

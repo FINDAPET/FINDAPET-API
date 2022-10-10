@@ -113,10 +113,19 @@ struct MessageController: RouteCollection {
             try? req.apns.send(.init(title: user.name, subtitle: "Sent you a new message"), to: deviceToken).wait()
         }
         
+        var bodyPath: String?
+        
+        if let bodyData = message.bodyData {
+            bodyPath = req.application.directory.publicDirectory.appending(UUID().uuidString)
+            
+            try await req.fileio.writeFile(ByteBuffer(data: bodyData), at: bodyPath ?? String())
+        }
+        
         try await Message(
             text: message.text,
+            bodyPath: bodyPath,
             userID: message.userID,
-            chatRoomID: message.chatRoomID
+            chatRoomID: message.chatRoomID ?? UUID()
         ).save(on: req.db)
         
         return .ok
