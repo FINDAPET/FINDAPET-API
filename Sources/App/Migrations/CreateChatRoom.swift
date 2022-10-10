@@ -13,6 +13,7 @@ struct CreateChatRoom: AsyncMigration {
     func prepare(on database: Database) async throws {
         try await database.schema(ChatRoom.schema)
             .id()
+            .field("users_id", .array(of: .uuid))
             .create()
     }
     

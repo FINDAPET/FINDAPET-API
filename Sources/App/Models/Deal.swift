@@ -218,3 +218,9 @@ extension Deal {
         var score: Int { self.cattery.deals.filter { $0.buyer != nil }.count * (self.isPremiumDeal ? 2 : 1) }
     }
 }
+
+extension Deal: Equatable {
+    static func == (lhs: Deal, rhs: Deal) -> Bool {
+        lhs.id == rhs.id
+    }
+}

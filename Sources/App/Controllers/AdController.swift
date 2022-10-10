@@ -32,20 +32,15 @@ struct AdController: RouteCollection {
         
         for ad in ads {
             let cattery = try await ad.$cattery.get(on: req.db)
-            var contentData: Data?
             var avatarData: Data?
             
-            if let buffer = try? await req.fileio.collectFile(at: ad.contentPath) {
-                contentData = Data(buffer: buffer)
-            }
-            
-            if let path = cattery?.avatarPath, let buffer = try? await req.fileio.collectFile(at: path) {
-                avatarData = Data(buffer: buffer)
+            if let path = cattery?.avatarPath {
+                avatarData = try? await FileManager.get(req: req, with: path)
             }
             
             adsOutput.append(Ad.Output(
                 id: ad.id,
-                contentData: contentData ?? Data(),
+                contentData: (try? await FileManager.get(req: req, with: ad.contentPath)) ?? Data(),
                 custromerName: ad.custromerName,
                 link: ad.link,
                 cattery: User.Output(
@@ -58,7 +53,8 @@ struct AdController: RouteCollection {
                     boughtDeals: [Deal.Output](),
                     ads: [Ad.Output](),
                     myOffers: [Offer.Output](),
-                    offers: [Offer.Output]()
+                    offers: [Offer.Output](),
+                    chatRooms: [ChatRoom.Output]()
                 )
             ))
         }
@@ -76,20 +72,15 @@ struct AdController: RouteCollection {
         
         for ad in ads {
             let cattery = try await ad.$cattery.get(on: req.db)
-            var contentData: Data?
             var avatarData: Data?
             
-            if let buffer = try? await req.fileio.collectFile(at: ad.contentPath) {
-                contentData = Data(buffer: buffer)
-            }
-            
-            if let path = cattery?.avatarPath, let buffer = try? await req.fileio.collectFile(at: path) {
-                avatarData = Data(buffer: buffer)
+            if let path = cattery?.avatarPath {
+                avatarData = try? await FileManager.get(req: req, with: path)
             }
             
             adsOutput.append(Ad.Output(
                 id: ad.id,
-                contentData: contentData ?? Data(),
+                contentData: (try? await FileManager.get(req: req, with: ad.contentPath)) ?? Data(),
                 custromerName: ad.custromerName,
                 link: ad.link,
                 cattery: User.Output(
@@ -102,7 +93,8 @@ struct AdController: RouteCollection {
                     boughtDeals: [Deal.Output](),
                     ads: [Ad.Output](),
                     myOffers: [Offer.Output](),
-                    offers: [Offer.Output]()
+                    offers: [Offer.Output](),
+                    chatRooms: [ChatRoom.Output]()
                 )
             ))
         }
@@ -111,13 +103,8 @@ struct AdController: RouteCollection {
     }
     
     private func create(req: Request) async throws -> HTTPStatus {
-        let cattery = try req.auth.require(User.self)
         let ad = try req.content.decode(Ad.Input.self)
         let path = req.application.directory.publicDirectory.appending(UUID().uuidString)
-        
-        guard cattery.isActiveCattery else {
-            throw Abort(.badRequest)
-        }
         
         try await req.fileio.writeFile(ByteBuffer(data: ad.contentData), at: path)
         
@@ -168,7 +155,7 @@ struct AdController: RouteCollection {
     private func deactivate(req: Request) async throws -> HTTPStatus {
         let cattery = try req.auth.require(User.self)
         
-        guard cattery.isAdmin || cattery.isActiveCattery else {
+        guard cattery.isAdmin else {
             throw Abort(.badRequest)
         }
         
@@ -186,7 +173,7 @@ struct AdController: RouteCollection {
     private func activate(req: Request) async throws -> HTTPStatus {
         let cattery = try req.auth.require(User.self)
         
-        guard cattery.isAdmin || cattery.isActiveCattery else {
+        guard cattery.isAdmin else {
             throw Abort(.badRequest)
         }
         

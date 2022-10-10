@@ -62,3 +62,9 @@ extension UserToken {
         var user: User
     }
 }
+
+extension UserToken: Equatable {
+    static func == (lhs: UserToken, rhs: UserToken) -> Bool {
+        lhs.id == rhs.id
+    }
+}

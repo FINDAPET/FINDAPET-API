@@ -71,3 +71,9 @@ extension Ad {
         var cattery: User.Output?
     }
 }
+
+extension Ad: Equatable {
+    static func == (lhs: Ad, rhs: Ad) -> Bool {
+        lhs.id == rhs.id
+    }
+}

@@ -11,4 +11,7 @@ func routes(_ app: Application) throws {
     try app.register(collection: DealController())
     try app.register(collection: OfferController())
     try app.register(collection: AdController())
+    try app.register(collection: ChatRoomController())
+    try app.register(collection: MessageController())
+    try app.register(collection: NotificationController())
 }

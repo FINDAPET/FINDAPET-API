@@ -24,6 +24,12 @@ struct UserTokenController: RouteCollection {
         let user = try req.auth.require(User.self)
         let token = try user.generateToken()
         
+        for token in (try? await UserToken.query(on: req.db).all()) ?? [UserToken]() {
+            if (try? await token.$user.get(on: req.db).id) == user.id {
+                try? await token.delete(on: req.db)
+            }
+        }
+        
         try await token.save(on: req.db)
         
         return UserToken.Output(id: token.id, value: token.value, user: user)

@@ -8,6 +8,7 @@
 import Foundation
 import NIOFoundationCompat
 import Vapor
+import APNS
 
 struct UserController: RouteCollection {
     
@@ -23,18 +24,19 @@ struct UserController: RouteCollection {
         users.get(":userID", "offers", "my", use: self.myOffers(req:))
         users.get(":userID", "offers", use: self.offers(req:))
         
+        userTokenProtected.get("chats", use: self.chatRooms(req:))
         userTokenProtected.put("change", use: self.changeUser(req:))
         userTokenProtected.get("me", use: self.user(req:))
         userTokenProtected.delete(":userID", "delete", "admin", use: self.deleteUser(req:))
         userTokenProtected.put(":userID", "admin", "on", use: self.createAdmin(req:))
         userTokenProtected.put(":userID", "admin", "off", use: self.deleteAdmin(req:))
-        userTokenProtected.webSocket("wait", "verify", onUpgrade: self.waitVerify(req:ws:))
         userTokenProtected.get("all", "admin", use: self.index(req:))
         userTokenProtected.get("all", "catteryes", "admin", use: self.indexCatteryes(req:))
         userTokenProtected.get("all", "users", "admin", use: self.indexUsers(req:))
         userTokenProtected.get("all", "catteryes", "wait", "admin", use: self.indexWaitVerify(req:))
         userTokenProtected.put(":userID", "approove", "cattery", "admin", use: self.aprooveCatteryVerify(req:))
         userTokenProtected.put(":userID", "delete", "cattery", "admin", use: self.deleteCatteryVerify(req:))
+        userTokenProtected.webSocket("update", onUpgrade: self.userWebSocket(req:ws:))
     }
     
     private func index(req: Request) async throws -> [User.Output] {
@@ -49,12 +51,12 @@ struct UserController: RouteCollection {
             var avatarData: Data?
             var documentData: Data?
             
-            if let path = user.avatarPath, let buffer = try? await req.fileio.collectFile(at: path) {
-                avatarData = Data(buffer: buffer)
+            if let path = user.avatarPath {
+                avatarData = try? await FileManager.get(req: req, with: path)
             }
             
-            if let path = user.documentPath, let buffer = try? await req.fileio.collectFile(at: path) {
-                documentData = Data(buffer: buffer)
+            if let path = user.documentPath {
+                documentData = try? await FileManager.get(req: req, with: path)
             }
             
             usersOutput.append(User.Output(
@@ -67,33 +69,12 @@ struct UserController: RouteCollection {
                 boughtDeals: [Deal.Output](),
                 ads: [Ad.Output](),
                 myOffers: [Offer.Output](),
-                offers: [Offer.Output]()
+                offers: [Offer.Output](),
+                chatRooms: [ChatRoom.Output]()
             ))
         }
         
         return usersOutput
-    }
-    
-    private func waitVerify(req: Request, ws: WebSocket) {
-        guard let cattery = try? req.auth.require(User.self) else {
-            print("❌ Error: unautorized.")
-            
-            return
-        }
-        
-        guard cattery.isCatteryWaitVerify, !cattery.isActiveCattery, !cattery.isAdmin else {
-            print("❌ Error: illegal.")
-            
-            return
-        }
-        
-        guard !WebSocketManager.shared.catteryWebSockets.contains(where: { $0.cattery.id == cattery.id }) else {
-            print("❌ Error: users web socket is already on the list.")
-            
-            return
-        }
-        
-        WebSocketManager.shared.addCatteryWebSocket(cattery: cattery, webSocket: ws)
     }
     
     private func aprooveCatteryVerify(req: Request) async throws -> HTTPStatus {
@@ -101,8 +82,7 @@ struct UserController: RouteCollection {
             throw Abort(.badRequest)
         }
         
-        guard let cattery = try await User.find(req.parameters.get("userID"), on: req.db),
-              WebSocketManager.shared.catteryWebSockets.contains(where: { $0.cattery.id == cattery.id }) else {
+        guard let cattery = try await User.find(req.parameters.get("userID"), on: req.db) else {
             throw Abort(.notFound)
         }
         
@@ -111,7 +91,9 @@ struct UserController: RouteCollection {
         
         try await cattery.save(on: req.db)
         
-        WebSocketManager.shared.sendMessageCatteryWebSocket(cattery: cattery, message: "aprooved")
+        if let deviceToken = cattery.deviceToken {
+            try req.apns.send(.init(title: "Your cattery is confirmed!"), to: deviceToken).wait()
+        }
         
         return .ok
     }
@@ -145,12 +127,12 @@ struct UserController: RouteCollection {
             var avatarData: Data?
             var documentData: Data?
             
-            if let path = user.avatarPath, let buffer = try? await req.fileio.collectFile(at: path) {
-                avatarData = Data(buffer: buffer)
+            if let path = user.avatarPath {
+                avatarData = try? await FileManager.get(req: req, with: path)
             }
             
-            if let path = user.documentPath, let buffer = try? await req.fileio.collectFile(at: path) {
-                documentData = Data(buffer: buffer)
+            if let path = user.documentPath {
+                documentData = try? await FileManager.get(req: req, with: path)
             }
             
             usersOutput.append(User.Output(
@@ -163,7 +145,8 @@ struct UserController: RouteCollection {
                 boughtDeals: [Deal.Output](),
                 ads: [Ad.Output](),
                 myOffers: [Offer.Output](),
-                offers: [Offer.Output]()
+                offers: [Offer.Output](),
+                chatRooms: [ChatRoom.Output]()
             ))
         }
         
@@ -182,12 +165,12 @@ struct UserController: RouteCollection {
             var avatarData: Data?
             var documentData: Data?
             
-            if let path = user.avatarPath, let buffer = try? await req.fileio.collectFile(at: path) {
-                avatarData = Data(buffer: buffer)
+            if let path = user.avatarPath {
+                avatarData = try? await FileManager.get(req: req, with: path)
             }
             
-            if let path = user.documentPath, let buffer = try? await req.fileio.collectFile(at: path) {
-                documentData = Data(buffer: buffer)
+            if let path = user.documentPath {
+                documentData = try? await FileManager.get(req: req, with: path)
             }
             
             usersOutput.append(User.Output(
@@ -200,7 +183,8 @@ struct UserController: RouteCollection {
                 boughtDeals: [Deal.Output](),
                 ads: [Ad.Output](),
                 myOffers: [Offer.Output](),
-                offers: [Offer.Output]()
+                offers: [Offer.Output](),
+                chatRooms: [ChatRoom.Output]()
             ))
         }
         
@@ -219,12 +203,12 @@ struct UserController: RouteCollection {
             var avatarData: Data?
             var documentData: Data?
             
-            if let path = user.avatarPath, let buffer = try? await req.fileio.collectFile(at: path) {
-                avatarData = Data(buffer: buffer)
+            if let path = user.avatarPath {
+                avatarData = try? await FileManager.get(req: req, with: path)
             }
             
-            if let path = user.documentPath, let buffer = try? await req.fileio.collectFile(at: path) {
-                documentData = Data(buffer: buffer)
+            if let path = user.documentPath {
+                documentData = try? await FileManager.get(req: req, with: path)
             }
             
             usersOutput.append(User.Output(
@@ -237,7 +221,8 @@ struct UserController: RouteCollection {
                 boughtDeals: [Deal.Output](),
                 ads: [Ad.Output](),
                 myOffers: [Offer.Output](),
-                offers: [Offer.Output]()
+                offers: [Offer.Output](),
+                chatRooms: [ChatRoom.Output]()
             ))
         }
         
@@ -257,20 +242,20 @@ struct UserController: RouteCollection {
         var myOffers = [Offer.Output]()
         var offers = [Offer.Output]()
         
-        if let path = user.avatarPath, let buffer = try? await req.fileio.collectFile(at: path) {
-            avatarData = Data(buffer: buffer)
+        if let path = user.avatarPath {
+            avatarData = try? await FileManager.get(req: req, with: path)
         }
         
-        if let path = user.documentPath, let buffer = try? await req.fileio.collectFile(at: path) {
-            documentData = Data(buffer: buffer)
+        if let path = user.documentPath {
+            documentData = try? await FileManager.get(req: req, with: path)
         }
         
         for deal in try await user.$deals.get(on: req.db) {
             var photoDatas = [Data]()
             
             for photoPath in deal.photoPaths {
-                if let buffer = try? await req.fileio.collectFile(at: photoPath) {
-                    photoDatas.append(Data(buffer: buffer))
+                if let data = try? await FileManager.get(req: req, with: photoPath) {
+                    photoDatas.append(data)
                 }
             }
             
@@ -290,7 +275,15 @@ struct UserController: RouteCollection {
                 age: deal.age,
                 color: deal.color,
                 price: deal.price,
-                cattery: User.Output(name: user.name, deals: [Deal.Output](), boughtDeals: [Deal.Output](), ads: [Ad.Output](), myOffers: [Offer.Output](), offers: [Offer.Output]()),
+                cattery: User.Output(
+                    name: user.name,
+                    deals: [Deal.Output](),
+                    boughtDeals: [Deal.Output](),
+                    ads: [Ad.Output](),
+                    myOffers: [Offer.Output](),
+                    offers: [Offer.Output](),
+                    chatRooms: [ChatRoom.Output]()
+                ),
                 country: deal.country,
                 city: deal.city,
                 description: deal.description,
@@ -309,8 +302,8 @@ struct UserController: RouteCollection {
             var photoDatas = [Data]()
             
             for photoPath in deal.photoPaths {
-                if let buffer = try? await req.fileio.collectFile(at: photoPath) {
-                    photoDatas.append(Data(buffer: buffer))
+                if let data = try? await FileManager.get(req: req, with: photoPath) {
+                    photoDatas.append(data)
                 }
             }
             
@@ -330,7 +323,15 @@ struct UserController: RouteCollection {
                 age: deal.age,
                 color: deal.color,
                 price: deal.price,
-                cattery: User.Output(name: user.name, deals: [Deal.Output](), boughtDeals: [Deal.Output](), ads: [Ad.Output](), myOffers: [Offer.Output](), offers: [Offer.Output]()),
+                cattery: User.Output(
+                    name: user.name,
+                    deals: [Deal.Output](),
+                    boughtDeals: [Deal.Output](),
+                    ads: [Ad.Output](),
+                    myOffers: [Offer.Output](),
+                    offers: [Offer.Output](),
+                    chatRooms: [ChatRoom.Output]()
+                ),
                 country: deal.country,
                 city: deal.city,
                 description: deal.description,
@@ -346,8 +347,22 @@ struct UserController: RouteCollection {
         }
         
         for ad in try await user.$ads.get(on: req.db) {
-            if let buffer = try? await req.fileio.collectFile(at: ad.contentPath) {
-                ads.append(Ad.Output(id: ad.id, contentData: Data(buffer: buffer), custromerName: ad.custromerName, link: ad.link, cattery: User.Output(name: user.name, deals: [Deal.Output](), boughtDeals: [Deal.Output](), ads: [Ad.Output](), myOffers: [Offer.Output](), offers: [Offer.Output]())))
+            if let data = try? await FileManager.get(req: req, with: ad.contentPath) {
+                ads.append(Ad.Output(
+                    id: ad.id,
+                    contentData: data,
+                    custromerName: ad.custromerName,
+                    link: ad.link,
+                    cattery: User.Output(
+                        name: user.name,
+                        deals: [Deal.Output](),
+                        boughtDeals: [Deal.Output](),
+                        ads: [Ad.Output](),
+                        myOffers: [Offer.Output](),
+                        offers: [Offer.Output](),
+                        chatRooms: [ChatRoom.Output]()
+                    )
+                ))
             }
         }
         
@@ -357,18 +372,58 @@ struct UserController: RouteCollection {
             var dealPhotoData: Data?
             var buyerAvatarData: Data?
             
-            if let path = buyer.avatarPath, let buffer = try? await req.fileio.collectFile(at: path) {
-                dealPhotoData = Data(buffer: buffer)
+            if let path = buyer.avatarPath {
+                dealPhotoData = try? await FileManager.get(req: req, with: path)
             }
             
-            if let path = deal.photoPaths.first, let buffer = try? await req.fileio.collectFile(at: path) {
-                buyerAvatarData = Data(buffer: buffer)
+            if let path = deal.photoPaths.first {
+                buyerAvatarData = try? await FileManager.get(req: req, with: path)
             }
             
             offers.append(Offer.Output(
-                buyer: User.Output(name: buyer.name, avatarData: buyerAvatarData, deals: [Deal.Output](), boughtDeals: [Deal.Output](), ads: [Ad.Output](), myOffers: [Offer.Output](), offers: [Offer.Output]()),
-                deal: Deal.Output(title: deal.title, photoDatas: [dealPhotoData ?? Data()], tags: deal.tags, isPremiumDeal: deal.isPremiumDeal, isActive: deal.isActive, viewsCount: deal.viewsCount, mode: deal.mode, petType: deal.petType, petBreed: deal.petBreed, showClass: deal.showClass, isMale: deal.isMale, age: deal.age, color: deal.color, price: deal.price, cattery: User.Output(name: "", deals: [Deal.Output](), boughtDeals: [Deal.Output](), ads: [Ad.Output](), myOffers: [Offer.Output](), offers: [Offer.Output]()), offers: [Offer.Output]()),
-                cattery: User.Output(name: "", deals: [Deal.Output](), boughtDeals: [Deal.Output](), ads: [Ad.Output](), myOffers: [Offer.Output](), offers: [Offer.Output]())
+                buyer: User.Output(
+                    name: buyer.name,
+                    avatarData: buyerAvatarData,
+                    deals: [Deal.Output](),
+                    boughtDeals: [Deal.Output](),
+                    ads: [Ad.Output](),
+                    myOffers: [Offer.Output](),
+                    offers: [Offer.Output](),
+                    chatRooms: [ChatRoom.Output]()),
+                deal: Deal.Output(
+                    title: deal.title,
+                    photoDatas: [dealPhotoData ?? Data()],
+                    tags: deal.tags,
+                    isPremiumDeal: deal.isPremiumDeal,
+                    isActive: deal.isActive,
+                    viewsCount: deal.viewsCount,
+                    mode: deal.mode,
+                    petType: deal.petType,
+                    petBreed: deal.petBreed,
+                    showClass: deal.showClass,
+                    isMale: deal.isMale,
+                    age: deal.age,
+                    color: deal.color,
+                    price: deal.price,
+                    cattery: User.Output(
+                        name: String(),
+                        deals: [Deal.Output](),
+                        boughtDeals: [Deal.Output](),
+                        ads: [Ad.Output](),
+                        myOffers: [Offer.Output](),
+                        offers: [Offer.Output](),
+                        chatRooms: [ChatRoom.Output]()),
+                    offers: [Offer.Output]()
+                ),
+                cattery: User.Output(
+                    name: String(),
+                    deals: [Deal.Output](),
+                    boughtDeals: [Deal.Output](),
+                    ads: [Ad.Output](),
+                    myOffers: [Offer.Output](),
+                    offers: [Offer.Output](),
+                    chatRooms: [ChatRoom.Output]()
+                )
             ))
         }
         
@@ -378,18 +433,58 @@ struct UserController: RouteCollection {
             var dealPhotoData: Data?
             var buyerAvatarData: Data?
             
-            if let path = buyer.avatarPath, let buffer = try? await req.fileio.collectFile(at: path) {
-                dealPhotoData = Data(buffer: buffer)
+            if let path = buyer.avatarPath {
+                dealPhotoData = try? await FileManager.get(req: req, with: path)
             }
             
-            if let path = deal.photoPaths.first, let buffer = try? await req.fileio.collectFile(at: path) {
-                buyerAvatarData = Data(buffer: buffer)
+            if let path = deal.photoPaths.first {
+                buyerAvatarData = try? await FileManager.get(req: req, with: path)
             }
             
             myOffers.append(Offer.Output(
-                buyer: User.Output(name: buyer.name, avatarData: buyerAvatarData, deals: [Deal.Output](), boughtDeals: [Deal.Output](), ads: [Ad.Output](), myOffers: [Offer.Output](), offers: [Offer.Output]()),
-                deal: Deal.Output(title: deal.title, photoDatas: [dealPhotoData ?? Data()], tags: deal.tags, isPremiumDeal: deal.isPremiumDeal, isActive: deal.isActive, viewsCount: deal.viewsCount, mode: deal.mode, petType: deal.petType, petBreed: deal.petBreed, showClass: deal.showClass, isMale: deal.isMale, age: deal.age, color: deal.color, price: deal.price, cattery: User.Output(name: "", deals: [Deal.Output](), boughtDeals: [Deal.Output](), ads: [Ad.Output](), myOffers: [Offer.Output](), offers: [Offer.Output]()), offers: [Offer.Output]()),
-                cattery: User.Output(name: "", deals: [Deal.Output](), boughtDeals: [Deal.Output](), ads: [Ad.Output](), myOffers: [Offer.Output](), offers: [Offer.Output]())
+                buyer: User.Output(
+                    name: buyer.name,
+                    avatarData: buyerAvatarData,
+                    deals: [Deal.Output](),
+                    boughtDeals: [Deal.Output](),
+                    ads: [Ad.Output](),
+                    myOffers: [Offer.Output](),
+                    offers: [Offer.Output](),
+                    chatRooms: [ChatRoom.Output]()),
+                deal: Deal.Output(
+                    title: deal.title,
+                    photoDatas: [dealPhotoData ?? Data()],
+                    tags: deal.tags,
+                    isPremiumDeal: deal.isPremiumDeal,
+                    isActive: deal.isActive,
+                    viewsCount: deal.viewsCount,
+                    mode: deal.mode,
+                    petType: deal.petType,
+                    petBreed: deal.petBreed,
+                    showClass: deal.showClass,
+                    isMale: deal.isMale,
+                    age: deal.age,
+                    color: deal.color,
+                    price: deal.price,
+                    cattery: User.Output(
+                        name: String(),
+                        deals: [Deal.Output](),
+                        boughtDeals: [Deal.Output](),
+                        ads: [Ad.Output](),
+                        myOffers: [Offer.Output](),
+                        offers: [Offer.Output](),
+                        chatRooms: [ChatRoom.Output]()),
+                    offers: [Offer.Output]()
+                ),
+                cattery: User.Output(
+                    name: String(),
+                    deals: [Deal.Output](),
+                    boughtDeals: [Deal.Output](),
+                    ads: [Ad.Output](),
+                    myOffers: [Offer.Output](),
+                    offers: [Offer.Output](),
+                    chatRooms: [ChatRoom.Output]()
+                )
             ))
         }
         
@@ -403,7 +498,8 @@ struct UserController: RouteCollection {
             boughtDeals: boughtDeals,
             ads: ads,
             myOffers: myOffers,
-            offers: offers
+            offers: offers,
+            chatRooms: [ChatRoom.Output]()
         )
     }
     
@@ -417,21 +513,22 @@ struct UserController: RouteCollection {
         var ads = [Ad.Output]()
         var myOffers = [Offer.Output]()
         var offers = [Offer.Output]()
+        var chatRooms = [ChatRoom.Output]()
         
-        if let path = user.avatarPath, let buffer = try? await req.fileio.collectFile(at: path) {
-            avatarData = Data(buffer: buffer)
+        if let path = user.avatarPath {
+            avatarData = try? await FileManager.get(req: req, with: path)
         }
         
-        if let path = user.documentPath, let buffer = try? await req.fileio.collectFile(at: path) {
-            documentData = Data(buffer: buffer)
+        if let path = user.documentPath {
+            documentData = try? await FileManager.get(req: req, with: path)
         }
         
         for deal in try await user.$deals.get(on: req.db) {
             var photoDatas = [Data]()
             
             for photoPath in deal.photoPaths {
-                if let buffer = try? await req.fileio.collectFile(at: photoPath) {
-                    photoDatas.append(Data(buffer: buffer))
+                if let data = try? await FileManager.get(req: req, with: photoPath) {
+                    photoDatas.append(data)
                 }
             }
             
@@ -451,7 +548,15 @@ struct UserController: RouteCollection {
                 age: deal.age,
                 color: deal.color,
                 price: deal.price,
-                cattery: User.Output(name: user.name, deals: [Deal.Output](), boughtDeals: [Deal.Output](), ads: [Ad.Output](), myOffers: [Offer.Output](), offers: [Offer.Output]()),
+                cattery: User.Output(
+                    name: user.name,
+                    deals: [Deal.Output](),
+                    boughtDeals: [Deal.Output](),
+                    ads: [Ad.Output](),
+                    myOffers: [Offer.Output](),
+                    offers: [Offer.Output](),
+                    chatRooms: [ChatRoom.Output]()
+                ),
                 country: deal.country,
                 city: deal.city,
                 description: deal.description,
@@ -470,8 +575,8 @@ struct UserController: RouteCollection {
             var photoDatas = [Data]()
             
             for photoPath in deal.photoPaths {
-                if let buffer = try? await req.fileio.collectFile(at: photoPath) {
-                    photoDatas.append(Data(buffer: buffer))
+                if let data = try? await FileManager.get(req: req, with: photoPath) {
+                    photoDatas.append(data)
                 }
             }
             
@@ -491,7 +596,15 @@ struct UserController: RouteCollection {
                 age: deal.age,
                 color: deal.color,
                 price: deal.price,
-                cattery: User.Output(name: user.name, deals: [Deal.Output](), boughtDeals: [Deal.Output](), ads: [Ad.Output](), myOffers: [Offer.Output](), offers: [Offer.Output]()),
+                cattery: User.Output(
+                    name: user.name,
+                    deals: [Deal.Output](),
+                    boughtDeals: [Deal.Output](),
+                    ads: [Ad.Output](),
+                    myOffers: [Offer.Output](),
+                    offers: [Offer.Output](),
+                    chatRooms: [ChatRoom.Output]()
+                ),
                 country: deal.country,
                 city: deal.city,
                 description: deal.description,
@@ -507,8 +620,22 @@ struct UserController: RouteCollection {
         }
         
         for ad in try await user.$ads.get(on: req.db) {
-            if let buffer = try? await req.fileio.collectFile(at: ad.contentPath) {
-                ads.append(Ad.Output(id: ad.id, contentData: Data(buffer: buffer), custromerName: ad.custromerName, link: ad.link, cattery: User.Output(name: user.name, deals: [Deal.Output](), boughtDeals: [Deal.Output](), ads: [Ad.Output](), myOffers: [Offer.Output](), offers: [Offer.Output]())))
+            if let data = try? await FileManager.get(req: req, with: ad.contentPath) {
+                ads.append(Ad.Output(
+                    id: ad.id,
+                    contentData: data,
+                    custromerName: ad.custromerName,
+                    link: ad.link,
+                    cattery: User.Output(
+                        name: user.name,
+                        deals: [Deal.Output](),
+                        boughtDeals: [Deal.Output](),
+                        ads: [Ad.Output](),
+                        myOffers: [Offer.Output](),
+                        offers: [Offer.Output](),
+                        chatRooms: [ChatRoom.Output]()
+                    )
+                ))
             }
         }
         
@@ -518,18 +645,60 @@ struct UserController: RouteCollection {
             var dealPhotoData: Data?
             var buyerAvatarData: Data?
             
-            if let path = buyer.avatarPath, let buffer = try? await req.fileio.collectFile(at: path) {
-                dealPhotoData = Data(buffer: buffer)
+            if let path = buyer.avatarPath {
+                dealPhotoData = try? await FileManager.get(req: req, with: path)
             }
             
-            if let path = deal.photoPaths.first, let buffer = try? await req.fileio.collectFile(at: path) {
-                buyerAvatarData = Data(buffer: buffer)
+            if let path = deal.photoPaths.first {
+                buyerAvatarData = try? await FileManager.get(req: req, with: path)
             }
             
             myOffers.append(Offer.Output(
-                buyer: User.Output(name: buyer.name, avatarData: buyerAvatarData, deals: [Deal.Output](), boughtDeals: [Deal.Output](), ads: [Ad.Output](), myOffers: [Offer.Output](), offers: [Offer.Output]()),
-                deal: Deal.Output(title: deal.title, photoDatas: [dealPhotoData ?? Data()], tags: deal.tags, isPremiumDeal: deal.isPremiumDeal, isActive: deal.isActive, viewsCount: deal.viewsCount, mode: deal.mode, petType: deal.petType, petBreed: deal.petBreed, showClass: deal.showClass, isMale: deal.isMale, age: deal.age, color: deal.color, price: deal.price, cattery: User.Output(name: "", deals: [Deal.Output](), boughtDeals: [Deal.Output](), ads: [Ad.Output](), myOffers: [Offer.Output](), offers: [Offer.Output]()), offers: [Offer.Output]()),
-                cattery: User.Output(name: "", deals: [Deal.Output](), boughtDeals: [Deal.Output](), ads: [Ad.Output](), myOffers: [Offer.Output](), offers: [Offer.Output]())
+                buyer: User.Output(
+                    name: buyer.name,
+                    avatarData: buyerAvatarData,
+                    deals: [Deal.Output](),
+                    boughtDeals: [Deal.Output](),
+                    ads: [Ad.Output](),
+                    myOffers: [Offer.Output](),
+                    offers: [Offer.Output](),
+                    chatRooms: [ChatRoom.Output]()
+                ),
+                deal: Deal.Output(
+                    title: deal.title,
+                    photoDatas: [dealPhotoData ?? Data()],
+                    tags: deal.tags,
+                    isPremiumDeal: deal.isPremiumDeal,
+                    isActive: deal.isActive,
+                    viewsCount: deal.viewsCount,
+                    mode: deal.mode,
+                    petType: deal.petType,
+                    petBreed: deal.petBreed,
+                    showClass: deal.showClass,
+                    isMale: deal.isMale,
+                    age: deal.age,
+                    color: deal.color,
+                    price: deal.price,
+                    cattery: User.Output(
+                        name: "",
+                        deals: [Deal.Output](),
+                        boughtDeals: [Deal.Output](),
+                        ads: [Ad.Output](),
+                        myOffers: [Offer.Output](),
+                        offers: [Offer.Output](),
+                        chatRooms: [ChatRoom.Output]()
+                    ),
+                    offers: [Offer.Output]()
+                ),
+                cattery: User.Output(
+                    name: "",
+                    deals: [Deal.Output](),
+                    boughtDeals: [Deal.Output](),
+                    ads: [Ad.Output](),
+                    myOffers: [Offer.Output](),
+                    offers: [Offer.Output](),
+                    chatRooms: [ChatRoom.Output]()
+                )
             ))
         }
         
@@ -539,19 +708,124 @@ struct UserController: RouteCollection {
             var dealPhotoData: Data?
             var buyerAvatarData: Data?
             
-            if let path = buyer.avatarPath, let buffer = try? await req.fileio.collectFile(at: path) {
-                dealPhotoData = Data(buffer: buffer)
+            if let path = buyer.avatarPath {
+                dealPhotoData = try? await FileManager.get(req: req, with: path)
             }
             
-            if let path = deal.photoPaths.first, let buffer = try? await req.fileio.collectFile(at: path) {
-                buyerAvatarData = Data(buffer: buffer)
+            if let path = deal.photoPaths.first {
+                buyerAvatarData = try? await FileManager.get(req: req, with: path)
             }
             
             offers.append(Offer.Output(
-                buyer: User.Output(name: buyer.name, avatarData: buyerAvatarData, deals: [Deal.Output](), boughtDeals: [Deal.Output](), ads: [Ad.Output](), myOffers: [Offer.Output](), offers: [Offer.Output]()),
-                deal: Deal.Output(title: deal.title, photoDatas: [dealPhotoData ?? Data()], tags: deal.tags, isPremiumDeal: deal.isPremiumDeal, isActive: deal.isActive, viewsCount: deal.viewsCount, mode: deal.mode, petType: deal.petType, petBreed: deal.petBreed, showClass: deal.showClass, isMale: deal.isMale, age: deal.age, color: deal.color, price: deal.price, cattery: User.Output(name: "", deals: [Deal.Output](), boughtDeals: [Deal.Output](), ads: [Ad.Output](), myOffers: [Offer.Output](), offers: [Offer.Output]()), offers: [Offer.Output]()),
-                cattery: User.Output(name: "", deals: [Deal.Output](), boughtDeals: [Deal.Output](), ads: [Ad.Output](), myOffers: [Offer.Output](), offers: [Offer.Output]())
+                buyer: User.Output(
+                    name: buyer.name,
+                    avatarData: buyerAvatarData,
+                    deals: [Deal.Output](),
+                    boughtDeals: [Deal.Output](),
+                    ads: [Ad.Output](),
+                    myOffers: [Offer.Output](),
+                    offers: [Offer.Output](),
+                    chatRooms: [ChatRoom.Output]()
+                ),
+                deal: Deal.Output(
+                    title: deal.title,
+                    photoDatas: [dealPhotoData ?? Data()],
+                    tags: deal.tags,
+                    isPremiumDeal: deal.isPremiumDeal,
+                    isActive: deal.isActive,
+                    viewsCount: deal.viewsCount,
+                    mode: deal.mode,
+                    petType: deal.petType,
+                    petBreed: deal.petBreed,
+                    showClass: deal.showClass,
+                    isMale: deal.isMale,
+                    age: deal.age,
+                    color: deal.color,
+                    price: deal.price,
+                    cattery: User.Output(
+                        name: String(),
+                        deals: [Deal.Output](),
+                        boughtDeals: [Deal.Output](),
+                        ads: [Ad.Output](),
+                        myOffers: [Offer.Output](),
+                        offers: [Offer.Output](),
+                        chatRooms: [ChatRoom.Output]()
+                    ),
+                    offers: [Offer.Output]()
+                ),
+                cattery: User.Output(
+                    name: String(),
+                    deals: [Deal.Output](),
+                    boughtDeals: [Deal.Output](),
+                    ads: [Ad.Output](),
+                    myOffers: [Offer.Output](),
+                    offers: [Offer.Output](),
+                    chatRooms: [ChatRoom.Output]()
+                )
             ))
+        }
+        
+        for chatRoomID in user.chatRoomsID {
+            var messages = [Message.Output]()
+            var users = [User.Output]()
+            
+            if let chatRoom = try? await ChatRoom.find(chatRoomID, on: req.db) {
+                for message in (try? await chatRoom.$messages.get(on: req.db)) ?? [Message]() {
+                    if let messageUser = try? await message.$user.get(on: req.db) {
+                        var bodyData: Data?
+                        
+                        if let path = message.bodyPath {
+                            bodyData = try? await FileManager.get(req: req, with: path)
+                        }
+                        
+                        messages.append(Message.Output(
+                            id: message.id,
+                            text: message.text,
+                            bodyData: bodyData,
+                            user: User.Output(
+                                id: messageUser.id,
+                                name: messageUser.name,
+                                deals: [Deal.Output](),
+                                boughtDeals: [Deal.Output](),
+                                ads: [Ad.Output](),
+                                myOffers: [Offer.Output](),
+                                offers: [Offer.Output](),
+                                chatRooms: [ChatRoom.Output]()
+                            ),
+                            createdAt: message.$createdAt.timestamp,
+                            chatRoom: ChatRoom.Output(users: [User.Output](), messages: [Message.Output]())
+                        ))
+                    }
+                }
+                
+                for userID in chatRoom.usersID {
+                    if let chatUser = try? await User.find(userID, on: req.db) {
+                        var avatarData: Data?
+                        
+                        if let path = chatUser.avatarPath {
+                            avatarData = try? await FileManager.get(req: req, with: path)
+                        }
+                        
+                        users.append(User.Output(
+                            id: chatUser.id,
+                            name: chatUser.name,
+                            avatarData: avatarData,
+                            deals: [Deal.Output](),
+                            boughtDeals: [Deal.Output](),
+                            ads: [Ad.Output](),
+                            myOffers: [Offer.Output](),
+                            offers: [Offer.Output](),
+                            chatRooms: [ChatRoom.Output]()
+                        ))
+                    }
+                }
+                
+                chatRooms.append(ChatRoom.Output(
+                    id: chatRoom.id,
+                    users: users,
+                    messages: messages
+                ))
+            }
         }
         
         return User.Output(
@@ -564,28 +838,33 @@ struct UserController: RouteCollection {
             boughtDeals: boughtDeals,
             ads: ads,
             myOffers: myOffers,
-            offers: offers
+            offers: offers,
+            chatRooms: chatRooms
         )
     }
     
     private func someUserDeals(req: Request) async throws -> [Deal.Output] {
-        return try await self.someUser(req: req).deals
+        try await self.someUser(req: req).deals
     }
     
     private func someUserBoughtDeals(req: Request) async throws -> [Deal.Output] {
-        return try await self.someUser(req: req).boughtDeals
+        try await self.someUser(req: req).boughtDeals
     }
     
     private func someUserAds(req: Request) async throws -> [Ad.Output] {
-        return try await self.someUser(req: req).ads
+        try await self.someUser(req: req).ads
     }
     
     private func myOffers(req: Request) async throws -> [Offer.Output] {
-        return try await self.someUser(req: req).myOffers
+        try await self.someUser(req: req).myOffers
     }
     
     private func offers(req: Request) async throws -> [Offer.Output] {
-        return try await self.someUser(req: req).offers
+        try await self.someUser(req: req).offers
+    }
+    
+    private func chatRooms(req: Request) async throws -> [ChatRoom.Output] {
+        try await self.user(req: req).chatRooms
     }
     
     private func create(req: Request) async throws -> HTTPStatus {
@@ -608,7 +887,7 @@ struct UserController: RouteCollection {
         }
         
         if let avatarData = newUser.avatarData,
-           let avatarPath = oldUser.avatarPath != nil ? oldUser.avatarPath : req.application.directory.publicDirectory.appending(UUID().uuidString) {
+           let avatarPath = oldUser.avatarPath != nil && oldUser.avatarPath != "" ? oldUser.avatarPath : req.application.directory.publicDirectory.appending(UUID().uuidString) {
             try await req.fileio.writeFile(ByteBuffer(data: avatarData), at: avatarPath)
             
             oldUser.avatarPath = avatarPath
@@ -624,6 +903,8 @@ struct UserController: RouteCollection {
         oldUser.name = newUser.name
         oldUser.description = newUser.description
         oldUser.isCatteryWaitVerify = newUser.isCatteryWaitVerify
+        oldUser.deviceToken = newUser.deviceToken
+        oldUser.countryCode = newUser.countryCode
         
         try await oldUser.save(on: req.db)
         
@@ -668,6 +949,22 @@ struct UserController: RouteCollection {
         try await user.delete(on: req.db)
         
         return .ok
+    }
+    
+    private func userWebSocket(req: Request, ws: WebSocket) async {
+        guard let userID = try? req.auth.require(User.self).id else {
+            print("❌ Error: not authorized.")
+            
+            try? await ws.close()
+            
+            return
+        }
+        
+        ws.onClose.whenSuccess {
+            UserWebSocketManager.shared.removeUserWebSocket(id: userID)
+        }
+        
+        UserWebSocketManager.shared.addUserWebSocket(id: userID, ws: ws)
     }
     
 }

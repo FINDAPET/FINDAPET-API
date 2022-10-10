@@ -2,11 +2,23 @@ import Fluent
 import FluentPostgresDriver
 import Leaf
 import Vapor
+import APNS
 
 // configures your application
 public func configure(_ app: Application) throws {
+    
+    app.apns.configuration = try .init(
+        authenticationMethod: .jwt(
+            key: .private(pem: Data(appleECP8PrivateKey.utf8)),
+            keyIdentifier: keyIdentifier,
+            teamIdentifier: teamIdentifier
+        ),
+        topic: topic,
+        environment: .production
+    )
+    
     // uncomment to serve files from /Public folder
-     app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
+    app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
 
     app.databases.use(.postgres(
         hostname: Environment.get("DATABASE_HOST") ?? "localhost",
@@ -17,6 +29,8 @@ public func configure(_ app: Application) throws {
     ), as: .psql)
     
     app.views.use(.leaf)
+    
+    app.routes.defaultMaxBodySize = "500mb"
 
     // register routes
     try routes(app)
@@ -25,9 +39,10 @@ public func configure(_ app: Application) throws {
         CreateAd(),
         CreateDeal(),
         CreateUser(),
-        CreateChatRoom(),
         CreateUserToken(),
-        CreateOffer()
+        CreateOffer(),
+        CreateChatRoom(),
+        CreateMessage()
     )
     
     #if DEBUG
