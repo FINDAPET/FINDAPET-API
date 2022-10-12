@@ -312,31 +312,32 @@ struct DealController: RouteCollection {
             photoPaths.append(path)
         }
         
-        try await Deal(id: deal.id,
-                       title: deal.title,
-                       photoPaths: photoPaths,
-                       tags: deal.tags,
-                       isPremiumDeal: deal.isPremiumDeal || user.isPremiumUser,
-                       isActive: deal.isActive,
-                       mode: deal.mode,
-                       petType: deal.petType,
-                       petBreed: deal.petBreed,
-                       showClass: deal.showClass,
-                       isMale: deal.isMale,
-                       age: deal.age,
-                       color: deal.color,
-                       price: deal.price,
-                       catteryID: deal.catteryID,
-                       country: deal.country,
-                       city: deal.city,
-                       description: deal.description,
-                       whatsappNumber: deal.whatsappNumber,
-                       telegramUsername: deal.telegramUsername,
-                       instagramUsername: deal.instagramUsername,
-                       facebookUsername: deal.facebookUsername,
-                       vkUsername: deal.vkUsername,
-                       mail: deal.mail,
-                       buyerID: deal.buyerID
+        try await Deal(
+            id: deal.id,
+            title: deal.title,
+            photoPaths: photoPaths,
+            tags: deal.tags,
+            isPremiumDeal: deal.isPremiumDeal || user.isPremiumUser,
+            isActive: deal.isActive,
+            mode: deal.mode,
+            petType: deal.petType,
+            petBreed: deal.petBreed,
+            showClass: deal.showClass,
+            isMale: deal.isMale,
+            age: deal.age,
+            color: deal.color,
+            price: deal.price,
+            catteryID: deal.catteryID,
+            country: deal.country,
+            city: deal.city,
+            description: deal.description,
+            whatsappNumber: deal.whatsappNumber,
+            telegramUsername: deal.telegramUsername,
+            instagramUsername: deal.instagramUsername,
+            facebookUsername: deal.facebookUsername,
+            vkUsername: deal.vkUsername,
+            mail: deal.mail,
+            buyerID: deal.buyerID
         ).save(on: req.db)
         
         return .ok
@@ -363,7 +364,7 @@ struct DealController: RouteCollection {
             photoPaths.append(path)
         }
         
-        oldDeal.isPremiumDeal = oldDeal.isPremiumDeal || user.isPremiumUser
+        oldDeal.isPremiumDeal = oldDeal.isPremiumDeal || user.isPremiumUser || newDeal.isPremiumDeal
         oldDeal.mail = newDeal.mail
         oldDeal.vkUsername = newDeal.vkUsername
         oldDeal.facebookUsername = newDeal.facebookUsername
