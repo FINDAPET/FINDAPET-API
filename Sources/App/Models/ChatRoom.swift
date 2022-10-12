@@ -34,7 +34,7 @@ final class ChatRoom: Model, Content {
 extension ChatRoom {
     struct Input: Content {
         var id: UUID?
-        var usersID: [UUID]
+        var usersID: [User.IDValue]
         
         init(id: UUID? = nil, usersID: [User.IDValue] = [User.IDValue]()) {
             self.id = id

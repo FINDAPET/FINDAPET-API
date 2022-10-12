@@ -40,6 +40,9 @@ final class User: Model, Content {
     @Field(key: "chat_rooms_id")
     var chatRoomsID: [ChatRoom.IDValue]
     
+    @Field(key: "is_premium_user")
+    var isPremiumUser: Bool
+    
     @OptionalField(key: "country_code")
     var countryCode: String?
     
@@ -72,7 +75,7 @@ final class User: Model, Content {
     
     init() { }
     
-    init(id: UUID? = nil, email: String, passwordHash: String, name: String = "", isActiveCattery: Bool = false, avatarPath: String? = nil, documentPath: String? = nil, description: String? = nil, chatsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), isCatteryWaitVerify: Bool = false, isAdmin: Bool = false, deviceToken: String? = nil, chatRoomsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), countryCode: String? = nil) {
+    init(id: UUID? = nil, email: String, passwordHash: String, name: String = "", isActiveCattery: Bool = false, avatarPath: String? = nil, documentPath: String? = nil, description: String? = nil, chatsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), isCatteryWaitVerify: Bool = false, isAdmin: Bool = false, deviceToken: String? = nil, chatRoomsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), countryCode: String? = nil, isPremiumUser: Bool = false) {
         self.id = id
         self.email = email
         self.passwordHash = passwordHash
@@ -87,6 +90,7 @@ final class User: Model, Content {
         self.deviceToken = deviceToken
         self.chatRoomsID = chatRoomsID
         self.countryCode = countryCode
+        self.isPremiumUser = isPremiumUser
     }
     
 }

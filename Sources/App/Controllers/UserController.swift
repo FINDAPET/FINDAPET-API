@@ -37,6 +37,8 @@ struct UserController: RouteCollection {
         userTokenProtected.put(":userID", "approove", "cattery", "admin", use: self.aprooveCatteryVerify(req:))
         userTokenProtected.put(":userID", "delete", "cattery", "admin", use: self.deleteCatteryVerify(req:))
         userTokenProtected.webSocket("update", onUpgrade: self.userWebSocket(req:ws:))
+        userTokenProtected.put("premium", use: self.makeUserPremium(req:))
+        userTokenProtected.put("not", "premium", use: self.makeUserPremium(req:))
     }
     
     private func index(req: Request) async throws -> [User.Output] {
@@ -865,6 +867,38 @@ struct UserController: RouteCollection {
     
     private func chatRooms(req: Request) async throws -> [ChatRoom.Output] {
         try await self.user(req: req).chatRooms
+    }
+    
+    private func makeUserPremium(req: Request) async throws -> HTTPStatus {
+        let user = try req.auth.require(User.self)
+        
+        user.isPremiumUser = true
+        
+        try await user.save(on: req.db)
+        
+        for deal in try await user.$deals.get(on: req.db) {
+            deal.isPremiumDeal = true
+            
+            try await deal.save(on: req.db)
+        }
+        
+        return .ok
+    }
+    
+    private func makeUserNotPremium(req: Request) async throws -> HTTPStatus {
+        let user = try req.auth.require(User.self)
+        
+        user.isPremiumUser = false
+        
+        try await user.save(on: req.db)
+        
+        for deal in try await user.$deals.get(on: req.db) {
+            deal.isPremiumDeal = false
+            
+            try await deal.save(on: req.db)
+        }
+        
+        return .ok
     }
     
     private func create(req: Request) async throws -> HTTPStatus {

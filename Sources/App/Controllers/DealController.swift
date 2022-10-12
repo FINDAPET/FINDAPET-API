@@ -316,7 +316,7 @@ struct DealController: RouteCollection {
                        title: deal.title,
                        photoPaths: photoPaths,
                        tags: deal.tags,
-                       isPremiumDeal: deal.isPremiumDeal,
+                       isPremiumDeal: deal.isPremiumDeal || user.isPremiumUser,
                        isActive: deal.isActive,
                        mode: deal.mode,
                        petType: deal.petType,
@@ -363,6 +363,7 @@ struct DealController: RouteCollection {
             photoPaths.append(path)
         }
         
+        oldDeal.isPremiumDeal = oldDeal.isPremiumDeal || user.isPremiumUser
         oldDeal.mail = newDeal.mail
         oldDeal.vkUsername = newDeal.vkUsername
         oldDeal.facebookUsername = newDeal.facebookUsername
