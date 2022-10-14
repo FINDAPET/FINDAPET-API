@@ -60,6 +60,7 @@ struct DealController: RouteCollection {
                 age: deal.age,
                 color: deal.color,
                 price: deal.price,
+                currencyName: deal.currencyName,
                 cattery: User.Output(
                     name: String(),
                     deals: [Deal.Output](),
@@ -155,6 +156,7 @@ struct DealController: RouteCollection {
                     age: deal.age,
                     color: deal.color,
                     price: deal.price,
+                    currencyName: deal.currencyName,
                     cattery: User.Output(
                         id: cattery.id,
                         name: cattery.name,
@@ -224,6 +226,7 @@ struct DealController: RouteCollection {
             age: deal.age,
             color: deal.color,
             price: deal.price,
+            currencyName: deal.currencyName,
             cattery: User.Output(
                 id: cattery.id,
                 name: cattery.name,
@@ -328,6 +331,7 @@ struct DealController: RouteCollection {
             color: deal.color,
             price: deal.price,
             catteryID: deal.catteryID,
+            currencyName: deal.currencyName,
             country: deal.country,
             city: deal.city,
             description: deal.description,
@@ -373,6 +377,7 @@ struct DealController: RouteCollection {
         oldDeal.city = newDeal.city
         oldDeal.country = newDeal.country
         oldDeal.price = newDeal.price
+        oldDeal.currencyName = newDeal.currencyName
         oldDeal.age = newDeal.age
         oldDeal.isMale = newDeal.isMale
         oldDeal.showClass = newDeal.showClass
