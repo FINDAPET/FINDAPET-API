@@ -26,6 +26,7 @@ final class CreateUser: AsyncMigration {
             .field("device_token", .string)
             .field("country_code", .string)
             .field("chat_rooms_id", .array(of: .uuid))
+            .field("is_premium_user", .bool)
             .unique(on: "email")
             .create()
     }
