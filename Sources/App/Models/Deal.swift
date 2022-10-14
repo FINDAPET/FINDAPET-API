@@ -56,7 +56,7 @@ final class Deal: Model, Content {
     var color: String
     
     @Field(key: "price")
-    var price: String
+    var price: Double
     
     @Field(key: "currency_name")
     var currencyName: String
@@ -99,7 +99,7 @@ final class Deal: Model, Content {
         
     init() {}
     
-    init(id: UUID? = nil, title: String, photoPaths: [String], tags: [String] = [String](), isPremiumDeal: Bool = false, isActive: Bool = true, viewsCount: Int = 0, mode: String, petType: String, petBreed: String, showClass: String, isMale: Bool, age: String, color: String, price: String, catteryID: User.IDValue, currencyName: String, country: String? = nil, city: String? = nil, description: String? = nil, whatsappNumber: String? = nil, telegramUsername: String? = nil, instagramUsername: String? = nil, facebookUsername: String? = nil, vkUsername: String? = nil, mail: String? = nil, buyerID: User.IDValue? = nil) {
+    init(id: UUID? = nil, title: String, photoPaths: [String], tags: [String] = [String](), isPremiumDeal: Bool = false, isActive: Bool = true, viewsCount: Int = 0, mode: String, petType: String, petBreed: String, showClass: String, isMale: Bool, age: String, color: String, price: Double, catteryID: User.IDValue, currencyName: String, country: String? = nil, city: String? = nil, description: String? = nil, whatsappNumber: String? = nil, telegramUsername: String? = nil, instagramUsername: String? = nil, facebookUsername: String? = nil, vkUsername: String? = nil, mail: String? = nil, buyerID: User.IDValue? = nil) {
         self.id = id
         self.title = title
         self.photoPaths = photoPaths
@@ -146,7 +146,7 @@ extension Deal {
         var isMale: Bool
         var age: String
         var color: String
-        var price: String
+        var price: Double
         var currencyName: String
         var catteryID: User.IDValue
         var country: String?
@@ -160,7 +160,7 @@ extension Deal {
         var mail: String?
         var buyerID: User.IDValue?
         
-        init(id: UUID? = nil, title: String, photoDatas: [Data], tags: [String] = [String](), isPremiumDeal: Bool = false, isActive: Bool = true, mode: String, petType: String, petBreed: String, showClass: String, isMale: Bool, age: String, color: String, price: String, catteryID: User.IDValue, currencyName: String, country: String? = nil, city: String? = nil, description: String? = nil, whatsappNumber: String? = nil, telegramUsername: String? = nil, instagramUsername: String? = nil, facebookUsername: String? = nil, vkUsername: String? = nil, mail: String? = nil, buyerID: User.IDValue?) {
+        init(id: UUID? = nil, title: String, photoDatas: [Data], tags: [String] = [String](), isPremiumDeal: Bool = false, isActive: Bool = true, mode: String, petType: String, petBreed: String, showClass: String, isMale: Bool, age: String, color: String, price: Double, catteryID: User.IDValue, currencyName: String, country: String? = nil, city: String? = nil, description: String? = nil, whatsappNumber: String? = nil, telegramUsername: String? = nil, instagramUsername: String? = nil, facebookUsername: String? = nil, vkUsername: String? = nil, mail: String? = nil, buyerID: User.IDValue?) {
             self.id = id
             self.title = title
             self.photoDatas = photoDatas
@@ -207,7 +207,7 @@ extension Deal {
         var isMale: Bool
         var age: String
         var color: String
-        var price: String
+        var price: Double
         var currencyName: String
         var cattery: User.Output
         var country: String?
