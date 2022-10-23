@@ -29,6 +29,7 @@ struct DealController: RouteCollection {
     }
     
     private func index(req: Request) async throws -> [Deal.Output] {
+        let user = try req.auth.require(User.self)
         let filter = try? req.content.decode(Filter.self)
         var deals = try await Deal.query(on: req.db).all()
         var dealsOutput = [Deal.Output]()
@@ -59,8 +60,12 @@ struct DealController: RouteCollection {
                 isMale: deal.isMale,
                 age: deal.age,
                 color: deal.color,
-                price: deal.price,
-                currencyName: deal.currencyName,
+                price: Double(try await CurrencyConverter.convert(
+                    from: deal.currencyName,
+                    to: user.basicCurrencyName,
+                    amount: deal.price
+                ).result),
+                currencyName: user.basicCurrencyName,
                 cattery: User.Output(
                     name: String(),
                     deals: [Deal.Output](),
@@ -96,6 +101,7 @@ struct DealController: RouteCollection {
         
         try await deal.save(on: req.db)
         
+        let user = try req.auth.require(User.self)
         let cattery = try await deal.$cattery.get(on: req.db)
         let buyer = try await deal.$buyer.get(on: req.db)
         var photoDatas = [Data]()
@@ -155,8 +161,12 @@ struct DealController: RouteCollection {
                     isMale: deal.isMale,
                     age: deal.age,
                     color: deal.color,
-                    price: deal.price,
-                    currencyName: deal.currencyName,
+                    price: Double(try await CurrencyConverter.convert(
+                        from: deal.currencyName,
+                        to: user.basicCurrencyName,
+                        amount: deal.price
+                    ).result),
+                    currencyName: user.basicCurrencyName,
                     cattery: User.Output(
                         id: cattery.id,
                         name: cattery.name,
@@ -225,8 +235,12 @@ struct DealController: RouteCollection {
             isMale: deal.isMale,
             age: deal.age,
             color: deal.color,
-            price: deal.price,
-            currencyName: deal.currencyName,
+            price: Double(try await CurrencyConverter.convert(
+                from: deal.currencyName,
+                to: user.basicCurrencyName,
+                amount: deal.price
+            ).result),
+            currencyName: user.basicCurrencyName,
             cattery: User.Output(
                 id: cattery.id,
                 name: cattery.name,

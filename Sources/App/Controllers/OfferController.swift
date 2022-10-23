@@ -26,6 +26,7 @@ struct OfferController: RouteCollection {
         }
         
         let offers = try await Offer.query(on: req.db).all()
+        let user = try req.auth.require(User.self)
         var offersOutput = [Offer.Output]()
         
         for offer in offers {
@@ -78,8 +79,12 @@ struct OfferController: RouteCollection {
                     isMale: deal.isMale,
                     age: deal.age,
                     color: deal.color,
-                    price: deal.price,
-                    currencyName: deal.currencyName,
+                    price: Double(try await CurrencyConverter.convert(
+                        from: deal.currencyName,
+                        to: user.basicCurrencyName,
+                        amount: deal.price
+                    ).result),
+                    currencyName: user.basicCurrencyName,
                     cattery: User.Output(
                         name: String(),
                         deals: [Deal.Output](),
