@@ -17,15 +17,16 @@ struct UserController: RouteCollection {
         let userTokenProtected = users.grouped(UserToken.authenticator())
         
         users.post("new", use: self.create(req:))
-        users.get(":userID", use: self.someUser(req:))
-        users.get(":userID", "deals", use: self.someUserDeals(req:))
-        users.get(":userID", "deals", "bought", use: self.someUserBoughtDeals(req:))
-        users.get(":userID", "ads", use: self.someUserAds(req:))
-        users.get(":userID", "offers", "my", use: self.myOffers(req:))
-        users.get(":userID", "offers", use: self.offers(req:))
         
+        userTokenProtected.get(":userID", "deals", use: self.someUserDeals(req:))
+        userTokenProtected.get(":userID", "deals", "bought", use: self.someUserBoughtDeals(req:))
+        userTokenProtected.get(":userID", "ads", use: self.someUserAds(req:))
+        userTokenProtected.get(":userID", "offers", "my", use: self.myOffers(req:))
+        userTokenProtected.get(":userID", "offers", use: self.offers(req:))
+        userTokenProtected.get(":userID", use: self.someUser(req:))
         userTokenProtected.get("chats", use: self.chatRooms(req:))
         userTokenProtected.put("change", use: self.changeUser(req:))
+        userTokenProtected.put("change", ":currencyName", use: self.changeUserCurrencyName(req:))
         userTokenProtected.get("me", use: self.user(req:))
         userTokenProtected.delete(":userID", "delete", "admin", use: self.deleteUser(req:))
         userTokenProtected.put(":userID", "admin", "on", use: self.createAdmin(req:))
@@ -948,6 +949,16 @@ struct UserController: RouteCollection {
         let create = try req.content.decode(User.Create.self)
         
         try await User(email: create.email, passwordHash: Bcrypt.hash(create.password)).save(on: req.db)
+        
+        return .ok
+    }
+    
+    private func changeUserCurrencyName(req: Request) async throws -> HTTPStatus {
+        let user = try req.auth.require(User.self)
+        
+        user.basicCurrencyName = req.parameters.get("currencyName") ?? "USD"
+        
+        try await user.save(on: req.db)
         
         return .ok
     }

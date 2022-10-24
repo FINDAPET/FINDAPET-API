@@ -16,10 +16,9 @@ struct DealController: RouteCollection {
         let deals = routes.grouped("deals")
         let userTokenProtected = deals.grouped(UserToken.authenticator())
         
-        deals.get("all", use: self.index(req:))
-        deals.get(":dealID", use: self.someDeal(req:))
-        deals.get(":dealID", "offers", use: self.dealOffers(req:))
-        
+        userTokenProtected.get("all", use: self.index(req:))
+        userTokenProtected.get(":dealID", use: self.someDeal(req:))
+        userTokenProtected.get(":dealID", "offers", use: self.dealOffers(req:))
         userTokenProtected.post("new", use: self.create(req:))
         userTokenProtected.put("change", use: self.change(req:))
         userTokenProtected.put(":dealID", "deactivate", use: self.deactivateDeal(req:))
