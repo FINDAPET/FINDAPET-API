@@ -956,7 +956,11 @@ struct UserController: RouteCollection {
     private func changeUserCurrencyName(req: Request) async throws -> HTTPStatus {
         let user = try req.auth.require(User.self)
         
-        user.basicCurrencyName = req.parameters.get("currencyName") ?? "USD"
+        guard let currencyName = req.parameters.get("currencyName") else {
+            throw Abort(.notFound)
+        }
+        
+        user.basicCurrencyName = currencyName
         
         try await user.save(on: req.db)
         
