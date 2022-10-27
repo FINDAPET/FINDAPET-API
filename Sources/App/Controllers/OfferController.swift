@@ -62,7 +62,8 @@ struct OfferController: RouteCollection {
                     ads: [Ad.Output](),
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
-                    chatRooms: [ChatRoom.Output]()
+                    chatRooms: [ChatRoom.Output](),
+                    isPremiumUser: buyer.isPremiumUser
                 ),
                 deal: Deal.Output(
                     id: deal.id,
@@ -92,7 +93,8 @@ struct OfferController: RouteCollection {
                         ads: [Ad.Output](),
                         myOffers: [Offer.Output](),
                         offers: [Offer.Output](),
-                        chatRooms: [ChatRoom.Output]()
+                        chatRooms: [ChatRoom.Output](),
+                        isPremiumUser: user.isPremiumUser
                     ),
                     country: deal.country,
                     city: deal.city,
@@ -117,7 +119,8 @@ struct OfferController: RouteCollection {
                     ads: [Ad.Output](),
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
-                    chatRooms: [ChatRoom.Output]()
+                    chatRooms: [ChatRoom.Output](),
+                    isPremiumUser: cattery.isPremiumUser
                 )
             ))
         }
@@ -130,12 +133,12 @@ struct OfferController: RouteCollection {
             throw Abort(.unauthorized)
         }
         
-        guard let offerInput = try? req.content.decode(Offer.Input.self) else {
+        guard let offerInput = try? req.content.decode(Offer.Input.self), offerInput.catteryID != offerInput.buyerID else {
             throw Abort(.badRequest)
         }
         
-        guard offerInput.catteryID != offerInput.buyerID else {
-            throw Abort(.badRequest)
+        guard let deviceToken = try await User.find(offerInput.catteryID, on: req.db)?.deviceToken else {
+            throw Abort(.notFound)
         }
         
         try await Offer(
@@ -143,6 +146,8 @@ struct OfferController: RouteCollection {
             dealID: offerInput.dealID,
             catteryID: offerInput.catteryID
         ).save(on: req.db)
+        
+        try? req.apns.send(.init(title: "You have a new offer"), to: deviceToken).wait()
         
         return .ok
     }

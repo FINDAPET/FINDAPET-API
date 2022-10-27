@@ -72,7 +72,8 @@ struct DealController: RouteCollection {
                     ads: [Ad.Output](),
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
-                    chatRooms: [ChatRoom.Output]()
+                    chatRooms: [ChatRoom.Output](),
+                    isPremiumUser: user.isPremiumUser
                 ),
                 country: deal.country,
                 city: deal.city,
@@ -143,7 +144,8 @@ struct DealController: RouteCollection {
                     ads: [Ad.Output](),
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
-                    chatRooms: [ChatRoom.Output]()
+                    chatRooms: [ChatRoom.Output](),
+                    isPremiumUser: offerBuyer.isPremiumUser
                 ),
                 deal: Deal.Output(
                     id: deal.id,
@@ -177,7 +179,8 @@ struct DealController: RouteCollection {
                         ads: [Ad.Output](),
                         myOffers: [Offer.Output](),
                         offers: [Offer.Output](),
-                        chatRooms: [ChatRoom.Output]()
+                        chatRooms: [ChatRoom.Output](),
+                        isPremiumUser: cattery.isPremiumUser
                     ),
                     country: deal.country,
                     city: deal.city,
@@ -199,7 +202,8 @@ struct DealController: RouteCollection {
                         ads: [Ad.Output](),
                         myOffers: [Offer.Output](),
                         offers: [Offer.Output](),
-                        chatRooms: [ChatRoom.Output]()
+                        chatRooms: [ChatRoom.Output](),
+                        isPremiumUser: buyer?.isPremiumUser ?? false
                     ),
                     offers: [Offer.Output]()
                 ),
@@ -214,7 +218,8 @@ struct DealController: RouteCollection {
                     ads: [Ad.Output](),
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
-                    chatRooms: [ChatRoom.Output]()
+                    chatRooms: [ChatRoom.Output](),
+                    isPremiumUser: cattery.isPremiumUser
                 )
             ))
         }
@@ -251,7 +256,8 @@ struct DealController: RouteCollection {
                 ads: [Ad.Output](),
                 myOffers: [Offer.Output](),
                 offers: [Offer.Output](),
-                chatRooms: [ChatRoom.Output]()
+                chatRooms: [ChatRoom.Output](),
+                isPremiumUser: cattery.isPremiumUser
             ),
             country: deal.country,
             city: deal.city,
@@ -273,7 +279,8 @@ struct DealController: RouteCollection {
                 ads: [Ad.Output](),
                 myOffers: [Offer.Output](),
                 offers: [Offer.Output](),
-                chatRooms: [ChatRoom.Output]()
+                chatRooms: [ChatRoom.Output](),
+                isPremiumUser: buyer?.isPremiumUser ?? false
             ),
             offers: offersOutput
         )
