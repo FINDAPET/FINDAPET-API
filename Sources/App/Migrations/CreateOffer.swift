@@ -13,6 +13,8 @@ struct CreateOffer: AsyncMigration {
     func prepare(on database: Database) async throws {
         try await database.schema(Offer.schema)
             .id()
+            .field("price", .int64, .required)
+            .field("currency_name", .string, .required)
             .field("buyer_id", .uuid, .required)
             .field("deal_id", .uuid, .required)
             .field("cattery_id", .uuid, .required)

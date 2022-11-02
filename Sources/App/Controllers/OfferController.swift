@@ -51,6 +51,8 @@ struct OfferController: RouteCollection {
             
             offersOutput.append(Offer.Output(
                 id: offer.id,
+                price: offer.price,
+                currencyName: offer.currencyName,
                 buyer: User.Output(
                     id: buyer.id,
                     name: buyer.name,
@@ -144,7 +146,9 @@ struct OfferController: RouteCollection {
         try await Offer(
             buyerID: offerInput.buyerID,
             dealID: offerInput.dealID,
-            catteryID: offerInput.catteryID
+            catteryID: offerInput.catteryID,
+            price: offerInput.price,
+            currencyName: offerInput.currencyName
         ).save(on: req.db)
         
         try? req.apns.send(.init(title: "You have a new offer"), to: deviceToken).wait()

@@ -133,6 +133,8 @@ struct DealController: RouteCollection {
             
             offersOutput.append(Offer.Output(
                 id: offer.id,
+                price: offer.price,
+                currencyName: offer.currencyName,
                 buyer: User.Output(
                     id: offerBuyer.id,
                     name: offerBuyer.name,

@@ -402,6 +402,8 @@ struct UserController: RouteCollection {
             }
             
             offers.append(Offer.Output(
+                price: myOffer.price,
+                currencyName: myOffer.currencyName,
                 buyer: User.Output(
                     name: buyer.name,
                     avatarData: buyerAvatarData,
@@ -473,6 +475,8 @@ struct UserController: RouteCollection {
             }
             
             myOffers.append(Offer.Output(
+                price: offer.price,
+                currencyName: offer.currencyName,
                 buyer: User.Output(
                     name: buyer.name,
                     avatarData: buyerAvatarData,
@@ -709,6 +713,8 @@ struct UserController: RouteCollection {
             }
             
             myOffers.append(Offer.Output(
+                price: myOffer.price,
+                currencyName: myOffer.currencyName,
                 buyer: User.Output(
                     name: buyer.name,
                     avatarData: buyerAvatarData,
@@ -780,6 +786,8 @@ struct UserController: RouteCollection {
             }
             
             offers.append(Offer.Output(
+                price: offer.price,
+                currencyName: offer.currencyName,
                 buyer: User.Output(
                     name: buyer.name,
                     avatarData: buyerAvatarData,
