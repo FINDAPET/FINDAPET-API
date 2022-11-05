@@ -26,6 +26,7 @@ struct OfferController: RouteCollection {
         }
         
         let offers = try await Offer.query(on: req.db).all()
+        let user = try req.auth.require(User.self)
         var offersOutput = [Offer.Output]()
         
         for offer in offers {
@@ -50,6 +51,8 @@ struct OfferController: RouteCollection {
             
             offersOutput.append(Offer.Output(
                 id: offer.id,
+                price: offer.price,
+                currencyName: offer.currencyName,
                 buyer: User.Output(
                     id: buyer.id,
                     name: buyer.name,
@@ -61,7 +64,8 @@ struct OfferController: RouteCollection {
                     ads: [Ad.Output](),
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
-                    chatRooms: [ChatRoom.Output]()
+                    chatRooms: [ChatRoom.Output](),
+                    isPremiumUser: buyer.isPremiumUser
                 ),
                 deal: Deal.Output(
                     id: deal.id,
@@ -78,8 +82,12 @@ struct OfferController: RouteCollection {
                     isMale: deal.isMale,
                     age: deal.age,
                     color: deal.color,
-                    price: deal.price,
-                    currencyName: deal.currencyName,
+                    price: Double(try await CurrencyConverter.convert(
+                        from: deal.currencyName,
+                        to: user.basicCurrencyName,
+                        amount: deal.price
+                    ).result),
+                    currencyName: user.basicCurrencyName,
                     cattery: User.Output(
                         name: String(),
                         deals: [Deal.Output](),
@@ -87,7 +95,8 @@ struct OfferController: RouteCollection {
                         ads: [Ad.Output](),
                         myOffers: [Offer.Output](),
                         offers: [Offer.Output](),
-                        chatRooms: [ChatRoom.Output]()
+                        chatRooms: [ChatRoom.Output](),
+                        isPremiumUser: user.isPremiumUser
                     ),
                     country: deal.country,
                     city: deal.city,
@@ -112,7 +121,8 @@ struct OfferController: RouteCollection {
                     ads: [Ad.Output](),
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
-                    chatRooms: [ChatRoom.Output]()
+                    chatRooms: [ChatRoom.Output](),
+                    isPremiumUser: cattery.isPremiumUser
                 )
             ))
         }
@@ -125,19 +135,23 @@ struct OfferController: RouteCollection {
             throw Abort(.unauthorized)
         }
         
-        guard let offerInput = try? req.content.decode(Offer.Input.self) else {
+        guard let offerInput = try? req.content.decode(Offer.Input.self), offerInput.catteryID != offerInput.buyerID else {
             throw Abort(.badRequest)
         }
         
-        guard offerInput.catteryID != offerInput.buyerID else {
-            throw Abort(.badRequest)
+        guard let deviceToken = try await User.find(offerInput.catteryID, on: req.db)?.deviceToken else {
+            throw Abort(.notFound)
         }
         
         try await Offer(
             buyerID: offerInput.buyerID,
             dealID: offerInput.dealID,
-            catteryID: offerInput.catteryID
+            catteryID: offerInput.catteryID,
+            price: offerInput.price,
+            currencyName: offerInput.currencyName
         ).save(on: req.db)
+        
+        try? req.apns.send(.init(title: "You have a new offer"), to: deviceToken).wait()
         
         return .ok
     }
