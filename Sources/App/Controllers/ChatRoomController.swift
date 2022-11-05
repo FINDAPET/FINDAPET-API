@@ -17,6 +17,7 @@ struct ChatRoomController: RouteCollection {
         userTokenProtected.get("all", "admin", use: self.index(req:))
         userTokenProtected.get("all", use: self.userChats(req:))
         userTokenProtected.get(":chatRoomID", use: self.chatRoom(req:))
+        userTokenProtected.get("chat", "with", ":userID", use: self.chatRoomWithUser(req:))
         userTokenProtected.post("new", use: self.create(req:))
         userTokenProtected.put("change", use: self.change(req:))
         userTokenProtected.webSocket("with", ":userID", onUpgrade: self.chatRoomWebSocket(req:ws:))
@@ -102,6 +103,75 @@ struct ChatRoomController: RouteCollection {
         var users = [User.Output]()
         
         guard let chatRoom = try? await ChatRoom.find(req.parameters.get("chatRoomID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        guard chatRoom.usersID.contains(where: { $0 == user.id }) || user.isAdmin else {
+            throw Abort(.badRequest)
+        }
+        
+        for message in (try? await chatRoom.$messages.get(on: req.db)) ?? [Message]() {
+            if let messageUser = try? await message.$user.get(on: req.db) {
+                messages.append(Message.Output(
+                    id: message.id,
+                    text: message.text,
+                    user: User.Output(
+                        id: messageUser.id,
+                        name: messageUser.name,
+                        deals: [Deal.Output](),
+                        boughtDeals: [Deal.Output](),
+                        ads: [Ad.Output](),
+                        myOffers: [Offer.Output](),
+                        offers: [Offer.Output](),
+                        chatRooms: [ChatRoom.Output](),
+                        isPremiumUser: messageUser.isPremiumUser
+                    ),
+                    createdAt: message.$createdAt.timestamp,
+                    chatRoom: ChatRoom.Output(users: [User.Output](), messages: [Message.Output]())
+                ))
+            }
+        }
+        
+        for userID in chatRoom.usersID {
+            if let chatUser = try? await User.find(userID, on: req.db) {
+                var avatarData: Data?
+                
+                if let path = chatUser.avatarPath {
+                    avatarData = try? await FileManager.get(req: req, with: path)
+                }
+                
+                users.append(User.Output(
+                    id: chatUser.id,
+                    name: chatUser.name,
+                    avatarData: avatarData,
+                    deals: [Deal.Output](),
+                    boughtDeals: [Deal.Output](),
+                    ads: [Ad.Output](),
+                    myOffers: [Offer.Output](),
+                    offers: [Offer.Output](),
+                    chatRooms: [ChatRoom.Output](),
+                    isPremiumUser: chatUser.isPremiumUser
+                ))
+            }
+        }
+        
+        return ChatRoom.Output(
+            id: chatRoom.id,
+            users: users,
+            messages: messages
+        )
+    }
+    
+    private func chatRoomWithUser(req: Request) async throws -> ChatRoom.Output {
+        let user = try req.auth.require(User.self)
+        var messages = [Message.Output]()
+        var users = [User.Output]()
+        
+        guard let stringID = req.parameters.get("userID"),
+              let id = UUID(uuidString: stringID),
+              let userID = user.id,
+              let chatRoom = try? await ChatRoom.query(on: req.db).all().filter({ $0.usersID.contains(id) &&
+                  $0.usersID.contains(userID) }).first else {
             throw Abort(.notFound)
         }
         
