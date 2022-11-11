@@ -544,10 +544,6 @@ struct DealController: RouteCollection {
         var isMale: Bool?
         var country: String?
         var city: String?
-        
-        enum PriceMode: Codable {
-            case ascending, descending
-        }
     }
     
 }
