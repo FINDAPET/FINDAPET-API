@@ -148,7 +148,7 @@ struct OfferController: RouteCollection {
             dealID: offerInput.dealID,
             catteryID: offerInput.catteryID,
             price: offerInput.price,
-            currencyName: offerInput.currencyName
+            currencyName: offerInput.currencyName.rawValue
         ).save(on: req.db)
         
         try? req.apns.send(.init(title: "You have a new offer"), to: deviceToken).wait()

@@ -48,12 +48,12 @@ extension Offer {
     struct Input: Content {
         var id: UUID?
         var price: Int
-        var currencyName: String
+        var currencyName: Currency
         var buyerID: User.IDValue
         var dealID: Deal.IDValue
         var catteryID: User.IDValue
         
-        init(id: UUID? = nil, buyerID: User.IDValue, dealID: Deal.IDValue, catteryID: User.IDValue, price: Int, currencyName: String) {
+        init(id: UUID? = nil, buyerID: User.IDValue, dealID: Deal.IDValue, catteryID: User.IDValue, price: Int, currencyName: Currency) {
             self.id = id
             self.price = price
             self.currencyName = currencyName

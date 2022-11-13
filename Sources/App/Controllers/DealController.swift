@@ -333,8 +333,8 @@ struct DealController: RouteCollection {
         for photoData in deal.photoDatas {
             let path = req.application.directory.publicDirectory.appending(UUID().uuidString)
             
-            try await req.fileio.writeFile(ByteBuffer(data: photoData), at: path)
-            
+            try await FileManager.set(req: req, with: path, data: photoData)
+
             photoPaths.append(path)
         }
         
@@ -354,7 +354,7 @@ struct DealController: RouteCollection {
             color: deal.color,
             price: deal.price,
             catteryID: deal.catteryID,
-            currencyName: deal.currencyName,
+            currencyName: deal.currencyName.rawValue,
             country: deal.country,
             city: deal.city,
             description: deal.description,
@@ -400,7 +400,7 @@ struct DealController: RouteCollection {
         oldDeal.city = newDeal.city
         oldDeal.country = newDeal.country
         oldDeal.price = newDeal.price
-        oldDeal.currencyName = newDeal.currencyName
+        oldDeal.currencyName = newDeal.currencyName.rawValue
         oldDeal.age = newDeal.age
         oldDeal.isMale = newDeal.isMale
         oldDeal.showClass = newDeal.showClass.rawValue
