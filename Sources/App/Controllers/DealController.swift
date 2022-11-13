@@ -354,7 +354,7 @@ struct DealController: RouteCollection {
             color: deal.color,
             price: deal.price,
             catteryID: deal.catteryID,
-            currencyName: deal.currencyName,
+            currencyName: deal.currencyName.rawValue,
             country: deal.country,
             city: deal.city,
             description: deal.description,
@@ -400,7 +400,7 @@ struct DealController: RouteCollection {
         oldDeal.city = newDeal.city
         oldDeal.country = newDeal.country
         oldDeal.price = newDeal.price
-        oldDeal.currencyName = newDeal.currencyName
+        oldDeal.currencyName = newDeal.currencyName.rawValue
         oldDeal.age = newDeal.age
         oldDeal.isMale = newDeal.isMale
         oldDeal.showClass = newDeal.showClass.rawValue
