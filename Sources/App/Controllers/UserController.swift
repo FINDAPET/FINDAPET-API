@@ -39,7 +39,7 @@ struct UserController: RouteCollection {
         userTokenProtected.put(":userID", "delete", "cattery", "admin", use: self.deleteCatteryVerify(req:))
         userTokenProtected.webSocket("update", onUpgrade: self.userWebSocket(req:ws:))
         userTokenProtected.put("premium", use: self.makeUserPremium(req:))
-        userTokenProtected.put("not", "premium", use: self.makeUserPremium(req:))
+        userTokenProtected.put("not", "premium", use: self.makeUserNotPremium(req:))
     }
     
     private func index(req: Request) async throws -> [User.Output] {
@@ -951,6 +951,10 @@ struct UserController: RouteCollection {
     
     private func makeUserPremium(req: Request) async throws -> HTTPStatus {
         let user = try req.auth.require(User.self)
+        let productID = try req.content.decode(Subscription.self).productID
+        let block: @Sendable (Timer) -> Void = { timer in
+            req.redirect(to: "/users/not/premium").encodeResponse(for: req).whenFailure { print("❌ Error: \($0.localizedDescription)") }
+        }
         
         user.isPremiumUser = true
         
@@ -960,6 +964,63 @@ struct UserController: RouteCollection {
             deal.isPremiumDeal = true
             
             try await deal.save(on: req.db)
+        }
+        
+        switch productID {
+        case .premiumSubscriptionOneMonth:
+            RunLoop.main.add(
+                Timer(
+                    timeInterval: Calendar.current.nextDate(
+                        after: .init(),
+                        matching: .init(month: 1),
+                        matchingPolicy: .previousTimePreservingSmallerComponents
+                    )?.timeIntervalSinceNow ?? .init(),
+                    repeats: false,
+                    block: block
+                ),
+                forMode: .common
+            )
+        case .premiumSubscriptionThreeMonth:
+            RunLoop.main.add(
+                Timer(
+                    timeInterval: Calendar.current.nextDate(
+                        after: .init(),
+                        matching: .init(month: 3),
+                        matchingPolicy: .previousTimePreservingSmallerComponents
+                    )?.timeIntervalSinceNow ?? .init(),
+                    repeats: false,
+                    block: block
+                ),
+                forMode: .common
+            )
+        case .premiumSubscriptionSixMonth:
+            RunLoop.main.add(
+                Timer(
+                    timeInterval: Calendar.current.nextDate(
+                        after: .init(),
+                        matching: .init(month: 6),
+                        matchingPolicy: .previousTimePreservingSmallerComponents
+                    )?.timeIntervalSinceNow ?? .init(),
+                    repeats: false,
+                    block: block
+                ),
+                forMode: .common
+            )
+        case .premiumSubscriptionOneYear:
+            RunLoop.main.add(
+                Timer(
+                    timeInterval: Calendar.current.nextDate(
+                        after: .init(),
+                        matching: .init(year: 1),
+                        matchingPolicy: .previousTimePreservingSmallerComponents
+                    )?.timeIntervalSinceNow ?? .init(),
+                    repeats: false,
+                    block: block
+                ),
+                forMode: .common
+            )
+        default:
+            break
         }
         
         return .ok
@@ -1032,7 +1093,7 @@ struct UserController: RouteCollection {
         oldUser.description = newUser.description
         oldUser.isCatteryWaitVerify = newUser.isCatteryWaitVerify
         oldUser.deviceToken = newUser.deviceToken
-        oldUser.countryCode = newUser.countryCode
+        oldUser.countryCode = newUser.countryCode?.rawValue
         oldUser.basicCurrencyName = newUser.basicCurrencyName
         
         try await oldUser.save(on: req.db)

@@ -24,6 +24,7 @@ struct AdController: RouteCollection {
         userTokenProtected.put(":adID", "activate", use: self.activate(req:))
         userTokenProtected.delete(":adID", "delete", use: self.delete(req:))
         userTokenProtected.get("all", "admin", use: self.index(req:))
+        userTokenProtected.get("random", use: self.randomAd(req:))
     }
     
     private func index(req: Request) async throws -> [Ad.Output] {
@@ -61,6 +62,40 @@ struct AdController: RouteCollection {
         }
         
         return adsOutput
+    }
+    
+    private func randomAd(req: Request) async throws -> Ad.Output {
+        guard let ad = try await Ad.query(on: req.db).all().randomElement() else {
+            throw Abort(.notFound)
+        }
+        
+        let cattery = try await ad.$cattery.get(on: req.db)
+        var avatarData: Data?
+        
+        if let path = cattery?.avatarPath {
+            avatarData = try? await FileManager.get(req: req, with: path)
+        }
+        
+        return Ad.Output(
+            id: ad.id,
+            contentData: (try? await FileManager.get(req: req, with: ad.contentPath)) ?? Data(),
+            custromerName: ad.custromerName,
+            link: ad.link,
+            cattery: User.Output(
+                id: cattery?.id,
+                name: cattery?.name ?? "",
+                avatarData: avatarData,
+                documentData: nil,
+                description: cattery?.description,
+                deals: [Deal.Output](),
+                boughtDeals: [Deal.Output](),
+                ads: [Ad.Output](),
+                myOffers: [Offer.Output](),
+                offers: [Offer.Output](),
+                chatRooms: [ChatRoom.Output](),
+                isPremiumUser: cattery?.isPremiumUser ?? false
+            )
+        )
     }
     
     private func indexAdimn(req: Request) async throws -> [Ad.Output] {

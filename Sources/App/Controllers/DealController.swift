@@ -345,10 +345,10 @@ struct DealController: RouteCollection {
             tags: deal.tags,
             isPremiumDeal: deal.isPremiumDeal || user.isPremiumUser,
             isActive: deal.isActive,
-            mode: deal.mode,
-            petType: deal.petType,
-            petBreed: deal.petBreed,
-            showClass: deal.showClass,
+            mode: deal.mode.rawValue,
+            petType: deal.petType.rawValue,
+            petBreed: deal.petBreed.rawValue,
+            showClass: deal.showClass.rawValue,
             isMale: deal.isMale,
             age: deal.age,
             color: deal.color,
@@ -403,10 +403,10 @@ struct DealController: RouteCollection {
         oldDeal.currencyName = newDeal.currencyName
         oldDeal.age = newDeal.age
         oldDeal.isMale = newDeal.isMale
-        oldDeal.showClass = newDeal.showClass
-        oldDeal.petBreed = newDeal.petBreed
-        oldDeal.petType = newDeal.petType
-        oldDeal.mode = newDeal.mode
+        oldDeal.showClass = newDeal.showClass.rawValue
+        oldDeal.petBreed = newDeal.petBreed.rawValue
+        oldDeal.petType = newDeal.petType.rawValue
+        oldDeal.mode = newDeal.mode.rawValue
         oldDeal.title = newDeal.title
         oldDeal.description = newDeal.description
         oldDeal.photoPaths = photoPaths
@@ -544,10 +544,6 @@ struct DealController: RouteCollection {
         var isMale: Bool?
         var country: String?
         var city: String?
-        
-        enum PriceMode: Codable {
-            case ascending, descending
-        }
     }
     
 }
