@@ -143,7 +143,7 @@ struct AdController: RouteCollection {
         let ad = try req.content.decode(Ad.Input.self)
         let path = req.application.directory.publicDirectory.appending(UUID().uuidString)
         
-        try await req.fileio.writeFile(ByteBuffer(data: ad.contentData), at: path)
+        try await FileManager.set(req: req, with: path, data: ad.contentData)
         
         try await Ad(contentPath: path, catteryID: ad.catteryID, isActive: true).save(on: req.db)
         
@@ -159,8 +159,8 @@ struct AdController: RouteCollection {
             throw Abort(.badRequest)
         }
         
-        try await req.fileio.writeFile(ByteBuffer(data: ad.contentData), at: path)
-        
+        try await FileManager.set(req: req, with: path, data: ad.contentData)
+
         try await Ad(contentPath: path, custromerName: ad.customerName, link: ad.customerName, isActive: true).save(on: req.db)
         
         return .ok
@@ -178,8 +178,8 @@ struct AdController: RouteCollection {
             throw Abort(.notFound)
         }
         
-        try await req.fileio.writeFile(ByteBuffer(data: newAd.contentData), at: oldAd.contentPath)
-        
+        try await FileManager.set(req: req, with: oldAd.contentPath, data: newAd.contentData)
+
         oldAd.$cattery.id = newAd.catteryID
         oldAd.link = newAd.link
         oldAd.custromerName = newAd.customerName

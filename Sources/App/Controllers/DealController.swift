@@ -333,8 +333,8 @@ struct DealController: RouteCollection {
         for photoData in deal.photoDatas {
             let path = req.application.directory.publicDirectory.appending(UUID().uuidString)
             
-            try await req.fileio.writeFile(ByteBuffer(data: photoData), at: path)
-            
+            try await FileManager.set(req: req, with: path, data: photoData)
+
             photoPaths.append(path)
         }
         

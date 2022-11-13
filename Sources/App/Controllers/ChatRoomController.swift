@@ -339,8 +339,8 @@ struct ChatRoomController: RouteCollection {
             if let data = input.bodyData {
                 let newPath = req.application.directory.publicDirectory.appending(UUID().uuidString)
                 
-                try? await req.fileio.writeFile(ByteBuffer(data: data), at: newPath)
-                
+                try? await FileManager.set(req: req, with: newPath, data: data)
+
                 path = newPath
             }
             

@@ -120,7 +120,7 @@ struct MessageController: RouteCollection {
         if let bodyData = message.bodyData {
             bodyPath = req.application.directory.publicDirectory.appending(UUID().uuidString)
             
-            try await req.fileio.writeFile(ByteBuffer(data: bodyData), at: bodyPath ?? String())
+            try await FileManager.set(req: req, with: bodyPath ?? .init(), data: bodyData)
         }
         
         try await Message(

@@ -93,6 +93,12 @@ struct UserController: RouteCollection {
         cattery.isActiveCattery = true
         cattery.isCatteryWaitVerify = false
         
+        if let path = cattery.documentPath {
+            try await FileManager.set(req: req, with: path, data: .init())
+
+            cattery.avatarPath = .init()
+        }
+        
         try await cattery.save(on: req.db)
         
         if let deviceToken = cattery.deviceToken {
@@ -1077,15 +1083,15 @@ struct UserController: RouteCollection {
         
         if let avatarData = newUser.avatarData,
            let avatarPath = oldUser.avatarPath != nil && oldUser.avatarPath != "" ? oldUser.avatarPath : req.application.directory.publicDirectory.appending(UUID().uuidString) {
-            try await req.fileio.writeFile(ByteBuffer(data: avatarData), at: avatarPath)
-            
+            try await FileManager.set(req: req, with: avatarPath, data: avatarData)
+
             oldUser.avatarPath = avatarPath
         }
         
         if let documentData = newUser.documentData,
            let documentPath = oldUser.documentPath != nil ? oldUser.documentPath : req.application.directory.publicDirectory.appending(UUID().uuidString) {
-            try await req.fileio.writeFile(ByteBuffer(data: documentData), at: documentPath)
-            
+            try await FileManager.set(req: req, with: documentPath, data: documentData)
+
             oldUser.documentPath = documentPath
         }
         
