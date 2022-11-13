@@ -140,10 +140,10 @@ extension User {
         var deviceToken: String?
         var isCatteryWaitVerify: Bool
         var chatRoomsID: [ChatRoom.IDValue]
-        var countryCode: Currency?
-        var basicCurrencyName: String
+        var countryCode: String?
+        var basicCurrencyName: Currency
         
-        init(id: UUID? = nil, name: String = "", avatarData: Data? = nil, documentData: Data? = nil, description: String? = nil, isCatteryWaitVerify: Bool = false, deviceToken: String? = nil, chatRoomsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), countryCode: Currency? = nil, basicCurrencyName: String = "USD") {
+        init(id: UUID? = nil, name: String = "", avatarData: Data? = nil, documentData: Data? = nil, description: String? = nil, isCatteryWaitVerify: Bool = false, deviceToken: String? = nil, chatRoomsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), countryCode: String? = nil, basicCurrencyName: Currency = .USD) {
             self.id = id
             self.name = name
             self.avatarData = avatarData
