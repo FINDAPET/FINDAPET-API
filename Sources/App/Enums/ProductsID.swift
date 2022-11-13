@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum ProductsID: String, CaseIterable, Decodable {
+enum ProductsID: String, Decodable {
     case premiumSubscriptionOneMonth = "com.FINDAPET.premium.subscription.one.month"
     case premiumSubscriptionThreeMonth = "com.FINDAPET.premium.subscription.three.months"
     case premiumSubscriptionSixMonth = "com.FINDAPET.premium.subscription.six.months"

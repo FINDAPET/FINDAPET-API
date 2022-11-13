@@ -1093,7 +1093,7 @@ struct UserController: RouteCollection {
         oldUser.description = newUser.description
         oldUser.isCatteryWaitVerify = newUser.isCatteryWaitVerify
         oldUser.deviceToken = newUser.deviceToken
-        oldUser.countryCode = newUser.countryCode
+        oldUser.countryCode = newUser.countryCode?.rawValue
         oldUser.basicCurrencyName = newUser.basicCurrencyName
         
         try await oldUser.save(on: req.db)
