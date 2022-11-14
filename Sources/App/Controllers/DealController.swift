@@ -533,7 +533,6 @@ struct DealController: RouteCollection {
     
     private struct Filter: Content {
         var title: String?
-        var mode: DealMode?
         var petType: PetType?
         var petBreed: PetBreed?
         var showClass: ShowClass?
