@@ -476,23 +476,19 @@ struct DealController: RouteCollection {
         return .ok
     }
     
-    private func filterDeals(deals: inout [Deal], filter: Filter?) {
+    private func filterDeals(deals: inout [Deal], filter: Filter? = nil) {
         deals = deals.filter { $0.isActive }
         
-        if let mode = filter?.mode {
-            deals = deals.filter { $0.mode == mode }
-        }
-        
         if let petType = filter?.petType {
-            deals = deals.filter { $0.petType == petType }
+            deals = deals.filter { $0.petType == petType.rawValue }
         }
         
         if let petBreed = filter?.petBreed {
-            deals = deals.filter { $0.petBreed == petBreed }
+            deals = deals.filter { $0.petBreed == petBreed.rawValue }
         }
         
         if let showClass = filter?.showClass {
-            deals = deals.filter { $0.showClass == showClass }
+            deals = deals.filter { $0.showClass == showClass.rawValue }
         }
         
         if let isMale = filter?.isMale {
@@ -537,10 +533,10 @@ struct DealController: RouteCollection {
     
     private struct Filter: Content {
         var title: String?
-        var mode: String?
-        var petType: String?
-        var petBreed: String?
-        var showClass: String?
+        var mode: DealMode?
+        var petType: PetType?
+        var petBreed: PetBreed?
+        var showClass: ShowClass?
         var isMale: Bool?
         var country: String?
         var city: String?
