@@ -535,7 +535,7 @@ struct DealController: RouteCollection {
         var title: String?
         var petType: PetType?
         var petBreed: PetBreed?
-        var showClass: ShowClass?
+        var showClass: PetClass?
         var isMale: Bool?
         var country: String?
         var city: String?
