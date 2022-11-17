@@ -203,7 +203,7 @@ extension Deal {
         var mode: String
         var petType: String
         var petBreed: String
-        var showClass: String
+        var petClass: String
         var isMale: Bool
         var age: String
         var color: String
