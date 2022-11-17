@@ -479,7 +479,7 @@ struct DealController: RouteCollection {
     private func filterDeals(deals: inout [Deal], filter: Filter? = nil) {
         deals = deals.filter { $0.isActive }
         
-        if let petType = filter?.petType {
+        if let petType = filter?.petType, filter?.petType != .none {
             deals = deals.filter { $0.petType == petType.rawValue }
         }
         
