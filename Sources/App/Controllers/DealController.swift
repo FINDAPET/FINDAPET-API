@@ -55,7 +55,7 @@ struct DealController: RouteCollection {
                 mode: deal.mode,
                 petType: deal.petType,
                 petBreed: deal.petBreed,
-                petClass: deal.showClass,
+                petClass: deal.petClass,
                 isMale: deal.isMale,
                 age: deal.age,
                 color: deal.color,
@@ -160,7 +160,7 @@ struct DealController: RouteCollection {
                     mode: deal.mode,
                     petType: deal.petType,
                     petBreed: deal.petBreed,
-                    petClass: deal.showClass,
+                    petClass: deal.petClass,
                     isMale: deal.isMale,
                     age: deal.age,
                     color: deal.color,
@@ -237,7 +237,7 @@ struct DealController: RouteCollection {
             mode: deal.mode,
             petType: deal.petType,
             petBreed: deal.petBreed,
-            petClass: deal.showClass,
+            petClass: deal.petClass,
             isMale: deal.isMale,
             age: deal.age,
             color: deal.color,
@@ -348,7 +348,7 @@ struct DealController: RouteCollection {
             mode: deal.mode.rawValue,
             petType: deal.petType.rawValue,
             petBreed: deal.petBreed.rawValue,
-            showClass: deal.showClass.rawValue,
+            petClass: deal.petClass.rawValue,
             isMale: deal.isMale,
             age: deal.age,
             color: deal.color,
@@ -403,7 +403,7 @@ struct DealController: RouteCollection {
         oldDeal.currencyName = newDeal.currencyName.rawValue
         oldDeal.age = newDeal.age
         oldDeal.isMale = newDeal.isMale
-        oldDeal.showClass = newDeal.showClass.rawValue
+        oldDeal.petClass = newDeal.petClass.rawValue
         oldDeal.petBreed = newDeal.petBreed.rawValue
         oldDeal.petType = newDeal.petType.rawValue
         oldDeal.mode = newDeal.mode.rawValue
@@ -487,8 +487,8 @@ struct DealController: RouteCollection {
             deals = deals.filter { $0.petBreed == petBreed.rawValue }
         }
         
-        if let showClass = filter?.showClass {
-            deals = deals.filter { $0.showClass == showClass.rawValue }
+        if let petClass = filter?.petClass, petClass != .allClass {
+            deals = deals.filter { $0.petClass == petClass.rawValue }
         }
         
         if let isMale = filter?.isMale {
@@ -535,7 +535,7 @@ struct DealController: RouteCollection {
         var title: String?
         var petType: PetType?
         var petBreed: PetBreed?
-        var showClass: PetClass?
+        var petClass: PetClass?
         var isMale: Bool?
         var country: String?
         var city: String?

@@ -78,7 +78,7 @@ struct OfferController: RouteCollection {
                     mode: deal.mode,
                     petType: deal.petType,
                     petBreed: deal.petBreed,
-                    petClass: deal.showClass,
+                    petClass: deal.petClass,
                     isMale: deal.isMale,
                     age: deal.age,
                     color: deal.color,
