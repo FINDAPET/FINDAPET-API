@@ -43,8 +43,8 @@ final class Deal: Model, Content {
     @Field(key: "pet_breed")
     var petBreed: String
     
-    @Field(key: "show_class")
-    var showClass: String
+    @Field(key: "pet_class")
+    var petClass: String
     
     @Field(key: "is_male")
     var isMale: Bool
@@ -99,7 +99,7 @@ final class Deal: Model, Content {
         
     init() {}
     
-    init(id: UUID? = nil, title: String, photoPaths: [String], tags: [String] = [String](), isPremiumDeal: Bool = false, isActive: Bool = true, viewsCount: Int = 0, mode: String, petType: String, petBreed: String, showClass: String, isMale: Bool, age: String, color: String, price: Double, catteryID: User.IDValue, currencyName: String, country: String? = nil, city: String? = nil, description: String? = nil, whatsappNumber: String? = nil, telegramUsername: String? = nil, instagramUsername: String? = nil, facebookUsername: String? = nil, vkUsername: String? = nil, mail: String? = nil, buyerID: User.IDValue? = nil) {
+    init(id: UUID? = nil, title: String, photoPaths: [String], tags: [String] = [String](), isPremiumDeal: Bool = false, isActive: Bool = true, viewsCount: Int = 0, mode: String, petType: String, petBreed: String, petClass: String, isMale: Bool, age: String, color: String, price: Double, catteryID: User.IDValue, currencyName: String, country: String? = nil, city: String? = nil, description: String? = nil, whatsappNumber: String? = nil, telegramUsername: String? = nil, instagramUsername: String? = nil, facebookUsername: String? = nil, vkUsername: String? = nil, mail: String? = nil, buyerID: User.IDValue? = nil) {
         self.id = id
         self.title = title
         self.photoPaths = photoPaths
@@ -110,7 +110,7 @@ final class Deal: Model, Content {
         self.mode = mode
         self.petType = petType
         self.petBreed = petBreed
-        self.showClass = showClass
+        self.petClass = petClass
         self.isMale = isMale
         self.age = age
         self.color = color
@@ -142,7 +142,7 @@ extension Deal {
         var mode: DealMode
         var petType: PetType
         var petBreed: PetBreed
-        var showClass: ShowClass
+        var petClass: PetClass
         var isMale: Bool
         var age: String
         var color: String
@@ -160,7 +160,7 @@ extension Deal {
         var mail: String?
         var buyerID: User.IDValue?
         
-        init(id: UUID? = nil, title: String, photoDatas: [Data], tags: [String] = [String](), isPremiumDeal: Bool = false, isActive: Bool = true, mode: DealMode, petType: PetType, petBreed: PetBreed, showClass: ShowClass, isMale: Bool, age: String, color: String, price: Double, catteryID: User.IDValue, currencyName: Currency, country: String? = nil, city: String? = nil, description: String? = nil, whatsappNumber: String? = nil, telegramUsername: String? = nil, instagramUsername: String? = nil, facebookUsername: String? = nil, vkUsername: String? = nil, mail: String? = nil, buyerID: User.IDValue?) {
+        init(id: UUID? = nil, title: String, photoDatas: [Data], tags: [String] = [String](), isPremiumDeal: Bool = false, isActive: Bool = true, mode: DealMode, petType: PetType, petBreed: PetBreed, petClass: PetClass, isMale: Bool, age: String, color: String, price: Double, catteryID: User.IDValue, currencyName: Currency, country: String? = nil, city: String? = nil, description: String? = nil, whatsappNumber: String? = nil, telegramUsername: String? = nil, instagramUsername: String? = nil, facebookUsername: String? = nil, vkUsername: String? = nil, mail: String? = nil, buyerID: User.IDValue?) {
             self.id = id
             self.title = title
             self.photoDatas = photoDatas
@@ -170,7 +170,7 @@ extension Deal {
             self.mode = mode
             self.petType = petType
             self.petBreed = petBreed
-            self.showClass = showClass
+            self.petClass = petClass
             self.isMale = isMale
             self.age = age
             self.color = color
@@ -203,7 +203,7 @@ extension Deal {
         var mode: String
         var petType: String
         var petBreed: String
-        var showClass: String
+        var petClass: String
         var isMale: Bool
         var age: String
         var color: String

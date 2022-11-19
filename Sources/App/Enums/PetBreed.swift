@@ -109,5 +109,5 @@ enum PetBreed: String, Codable {
     case BrazilianTerrier = "Brazilian Terrier"
     case SwedishVallhund = "Swedish Vallhund"
     case FrisianWaterDog = "Frisian Water Dog"
-    case other = "-"
+    case other = "Other"
 }
