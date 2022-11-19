@@ -528,7 +528,6 @@ struct DealController: RouteCollection {
             }
         }
         
-        
     }
     
     private struct Filter: Content {
