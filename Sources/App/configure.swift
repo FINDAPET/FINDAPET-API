@@ -42,7 +42,9 @@ public func configure(_ app: Application) throws {
         CreateUserToken(),
         CreateOffer(),
         CreateChatRoom(),
-        CreateMessage()
+        CreateMessage(),
+        CreateComplaint(),
+        CreateNotificationScreen()
     )
     
     #if DEBUG

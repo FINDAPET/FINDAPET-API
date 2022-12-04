@@ -14,4 +14,6 @@ func routes(_ app: Application) throws {
     try app.register(collection: ChatRoomController())
     try app.register(collection: MessageController())
     try app.register(collection: NotificationController())
+    try app.register(collection: ComplaintController())
+    try app.register(collection: NotificationScreenController())
 }

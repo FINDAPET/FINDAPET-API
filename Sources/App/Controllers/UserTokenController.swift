@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import NIOFoundationCompat
 import Vapor
 
 struct UserTokenController: RouteCollection {

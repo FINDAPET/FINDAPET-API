@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import NIOFoundationCompat
 import Vapor
 import APNS
 
@@ -21,6 +20,7 @@ struct DealController: RouteCollection {
         userTokenProtected.get(":dealID", "offers", use: self.dealOffers(req:))
         userTokenProtected.post("new", use: self.create(req:))
         userTokenProtected.put("change", use: self.change(req:))
+        userTokenProtected.put(":dealID", "view", use: self.viewDeal(req:))
         userTokenProtected.put(":dealID", "deactivate", use: self.deactivateDeal(req:))
         userTokenProtected.put(":dealID", "activate", use: self.activateDeal(req:))
         userTokenProtected.put(":dealID", "offer", ":offerID", "sold", use: self.sold(req:))
@@ -414,6 +414,22 @@ struct DealController: RouteCollection {
         oldDeal.color = newDeal.color
         
         try await oldDeal.save(on: req.db)
+        
+        return .ok
+    }
+    
+    private func viewDeal(req: Request) async throws -> HTTPStatus {
+        guard let deal = try await Deal.find(req.parameters.get("dealID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        guard try await deal.$cattery.get(on: req.db).id != req.auth.require(User.self).id else {
+            throw Abort(.badRequest)
+        }
+        
+        deal.viewsCount += 1
+        
+        try await deal.save(on: req.db)
         
         return .ok
     }
