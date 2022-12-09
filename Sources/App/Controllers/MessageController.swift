@@ -163,6 +163,10 @@ struct MessageController: RouteCollection {
         
         try await message.delete(on: req.db)
         
+        if let path = message.bodyPath {
+            try await FileManager.set(req: req, with: path, data: .init())
+        }
+        
         return .ok
     }
     

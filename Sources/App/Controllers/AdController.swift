@@ -234,6 +234,7 @@ struct AdController: RouteCollection {
         }
         
         try await ad.delete(on: req.db)
+        try await FileManager.set(req: req, with: ad.contentPath, data: .init())
         
         return .ok
     }

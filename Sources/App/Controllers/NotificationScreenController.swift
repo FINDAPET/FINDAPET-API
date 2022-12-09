@@ -14,7 +14,7 @@ struct NotificationScreenController: RouteCollection {
         let notificationScreens = routes.grouped("notification", "screens")
         let userTokenProtected = notificationScreens.grouped(UserToken.authenticator())
         
-        userTokenProtected.get("all", use: self.index(req:))
+        userTokenProtected.get("all", ":countryCode", use: self.index(req:))
         userTokenProtected.get(":notificationScreenID", use: self.notificationScreen(req:))
         userTokenProtected.post("new", use: self.create(req:))
         userTokenProtected.put("change", use: self.change(req:))
@@ -25,16 +25,14 @@ struct NotificationScreenController: RouteCollection {
         _ = try req.auth.require(User.self)
         var outputs = [NotificationScreen.Output]()
         
-        for notificationScreen in try await NotificationScreen.query(on: req.db).all() {
-            var backgroundData: Data?
-            
-            if let path = notificationScreen.backgroundImagePath, let data = try? await FileManager.get(req: req, with: path) {
-                backgroundData = data
-            }
-            
+        guard let countryCode = req.parameters.get("countryCode") else {
+            throw Abort(.badRequest)
+        }
+        
+        for notificationScreen in try await NotificationScreen.query(on: req.db).all().filter({ $0.countryCode == countryCode }) {
             outputs.append(.init(
                 id: notificationScreen.id,
-                backgroundImageData: backgroundData,
+                backgroundImageData: (try? await FileManager.get(req: req, with: notificationScreen.backgroundImagePath)) ?? .init(),
                 title: notificationScreen.title,
                 text: notificationScreen.text,
                 buttonTitle: notificationScreen.buttonTitle,
@@ -51,20 +49,14 @@ struct NotificationScreenController: RouteCollection {
         guard try req.auth.require(User.self).isAdmin else {
             throw Abort(.badRequest)
         }
-        
-        var backgroundData: Data?
-        
+                
         guard let notificationScreen = try await NotificationScreen.find(req.parameters.get("notificationScreenID"), on: req.db) else {
             throw Abort(.notFound)
         }
         
-        if let path = notificationScreen.backgroundImagePath, let data = try? await FileManager.get(req: req, with: path) {
-            backgroundData = data
-        }
-        
         return .init(
             id: notificationScreen.id,
-            backgroundImageData: backgroundData,
+            backgroundImageData: try await FileManager.get(req: req, with: notificationScreen.backgroundImagePath) ?? .init(),
             title: notificationScreen.title,
             text: notificationScreen.text,
             buttonTitle: notificationScreen.buttonTitle,
@@ -82,12 +74,10 @@ struct NotificationScreenController: RouteCollection {
         let input = try req.content.decode(NotificationScreen.Input.self)
         let path = req.application.directory.publicDirectory + UUID().uuidString
         
-        if let data = input.backgroundImageData {
-            try await FileManager.set(req: req, with: path, data: data)
-        }
-        
+        try await FileManager.set(req: req, with: path, data: input.backgroundImageData)
         try await NotificationScreen(
             id: input.id,
+            countryCode: input.countryCode,
             backgroundImagePath: path,
             title: input.title,
             text: input.text,
@@ -111,16 +101,12 @@ struct NotificationScreenController: RouteCollection {
             throw Abort(.notFound)
         }
         
-        let path = notificationScreen.backgroundImagePath ?? (req.application.directory.publicDirectory + UUID().uuidString)
+        try await FileManager.set(req: req, with: notificationScreen.backgroundImagePath, data: input.backgroundImageData)
         
-        if let data = input.backgroundImageData {
-            try await FileManager.set(req: req, with: path, data: data)
-        }
-        
+        notificationScreen.countryCode = input.countryCode
         notificationScreen.title = input.title
         notificationScreen.text = input.text
         notificationScreen.textColorHEX = input.textColorHEX
-        notificationScreen.backgroundImagePath = path
         notificationScreen.buttonColorHEX = input.buttonColorHEX
         notificationScreen.buttonTitle = input.buttonTitle
         notificationScreen.buttonTitleColorHEX = input.buttonTitleColorHEX
@@ -140,6 +126,7 @@ struct NotificationScreenController: RouteCollection {
         }
         
         try await notificationScreen.delete(on: req.db)
+        try await FileManager.set(req: req, with: notificationScreen.backgroundImagePath, data: .init())
         
         return .ok
     }

@@ -92,12 +92,6 @@ struct UserController: RouteCollection {
         cattery.isActiveCattery = true
         cattery.isCatteryWaitVerify = false
         
-        if let path = cattery.documentPath {
-            try await FileManager.set(req: req, with: path, data: .init())
-
-            cattery.avatarPath = .init()
-        }
-        
         try await cattery.save(on: req.db)
         
         if let deviceToken = cattery.deviceToken {
@@ -1142,6 +1136,14 @@ struct UserController: RouteCollection {
         }
         
         try await user.delete(on: req.db)
+        
+        if let path = user.documentPath {
+            try await FileManager.set(req: req, with: path, data: .init())
+        }
+        
+        if let path = user.avatarPath {
+            try await FileManager.set(req: req, with: path, data: .init())
+        }
         
         return .ok
     }

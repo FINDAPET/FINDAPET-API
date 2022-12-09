@@ -16,40 +16,45 @@ final class NotificationScreen: Model, Content {
     @ID(key: .id)
     var id: UUID?
     
-    @OptionalField(key: "background_image_path")
-    var backgroundImagePath: String?
+    @Field(key: "country_code")
+    var countryCode: String
     
-    @OptionalField(key: "title")
-    var title: String?
+    @Field(key: "background_image_path")
+    var backgroundImagePath: String
     
-    @OptionalField(key: "text")
-    var text: String?
+    @Field(key: "title")
+    var title: String
     
-    @OptionalField(key: "button_title")
-    var buttonTitle: String?
+    @Field(key: "text")
+    var text: String
     
-    @OptionalField(key: "text_color_hex")
-    var textColorHEX: String?
+    @Field(key: "button_title")
+    var buttonTitle: String
     
-    @OptionalField(key: "button_title_color_hex")
-    var buttonTitleColorHEX: String?
+    @Field(key: "text_color_hex")
+    var textColorHEX: String
     
-    @OptionalField(key: "button_color_hex")
-    var buttonColorHEX: String?
+    @Field(key: "button_title_color_hex")
+    var buttonTitleColorHEX: String
+    
+    @Field(key: "button_color_hex")
+    var buttonColorHEX: String
     
     init() { }
     
     init(
         id: UUID? = nil,
-        backgroundImagePath: String? = nil,
-        title: String? = nil,
-        text: String? = nil,
-        buttonTitle: String? = nil,
-        textColorHEX: String? = nil,
-        buttonTitleColorHEX: String? = nil,
-        buttonColorHEX: String? = nil
+        countryCode: String,
+        backgroundImagePath: String,
+        title: String,
+        text: String,
+        buttonTitle: String,
+        textColorHEX: String,
+        buttonTitleColorHEX: String,
+        buttonColorHEX: String
     ) {
         self.id = id
+        self.countryCode = countryCode
         self.backgroundImagePath = backgroundImagePath
         self.title = title
         self.text = text
@@ -64,26 +69,27 @@ final class NotificationScreen: Model, Content {
 extension NotificationScreen {
     struct Input: Content {
         var id: UUID?
-        var backgroundImageData: Data?
-        var title: String?
-        var text: String?
-        var buttonTitle: String?
-        var textColorHEX: String?
-        var buttonTitleColorHEX: String?
-        var buttonColorHEX: String?
+        var countryCode: String
+        var backgroundImageData: Data
+        var title: String
+        var text: String
+        var buttonTitle: String
+        var textColorHEX: String
+        var buttonTitleColorHEX: String
+        var buttonColorHEX: String
     }
 }
 
 extension NotificationScreen {
     struct Output: Content {
         var id: UUID?
-        var backgroundImageData: Data?
-        var title: String?
-        var text: String?
-        var buttonTitle: String?
-        var textColorHEX: String?
-        var buttonTitleColorHEX: String?
-        var buttonColorHEX: String?
+        var backgroundImageData: Data
+        var title: String
+        var text: String
+        var buttonTitle: String
+        var textColorHEX: String
+        var buttonTitleColorHEX: String
+        var buttonColorHEX: String
     }
 }
 

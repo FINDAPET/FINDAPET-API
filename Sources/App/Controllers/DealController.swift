@@ -489,6 +489,10 @@ struct DealController: RouteCollection {
         
         try await deal.delete(on: req.db)
         
+        for photoPath in deal.photoPaths {
+            try await FileManager.set(req: req, with: photoPath, data: .init())
+        }
+        
         return .ok
     }
     

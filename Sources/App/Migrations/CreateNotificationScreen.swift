@@ -13,13 +13,14 @@ struct CreateNotificationScreen: AsyncMigration {
     func prepare(on database: Database) async throws {
         try await database.schema(NotificationScreen.schema)
             .id()
-            .field("background_image_path", .string)
-            .field("title", .string)
-            .field("text", .string)
-            .field("button_title", .string)
-            .field("text_color_hex", .string)
-            .field("button_title_color_hex", .string)
-            .field("button_color_hex", .string)
+            .field("country_code", .string, .required)
+            .field("background_image_path", .string, .required)
+            .field("title", .string, .required)
+            .field("text", .string, .required)
+            .field("button_title", .string, .required)
+            .field("text_color_hex", .string, .required)
+            .field("button_title_color_hex", .string, .required)
+            .field("button_color_hex", .string, .required)
             .create()
     }
     
