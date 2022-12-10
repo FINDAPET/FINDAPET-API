@@ -6,8 +6,9 @@
 //
 
 import Foundation
+import Vapor
 
-enum PetClass: String, Codable {
+enum PetClass: String, Content, CaseIterable {
     case showClass = "Show Class"
     case breedClass = "Breed Class"
     case allClass = "Show/Breed Class"

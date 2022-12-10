@@ -6,8 +6,9 @@
 //
 
 import Foundation
+import Vapor
 
-enum DealMode: String, Codable {
+enum DealMode: String, Content, CaseIterable {
     case onlyInCity = "Only in the City"
     case onlyInCountry = "Only in the Country"
     case onlyAbroad = "Only Abroad"

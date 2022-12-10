@@ -6,8 +6,9 @@
 //
 
 import Foundation
+import Vapor
 
-enum PetBreed: String, Codable {
+enum PetBreed: String, Content, CaseIterable {
     case Abyssinian, Anatoli, Asian, Bengal, Burmese, Ceylon, Chartreux, Chausie, Kanaani, Korat, Lykoy, Minskin, Nebelung, Ocicat, Persian, Peterbald, Ragdoll, Russian, Savannah, Serengeti, Siamese, Singapura, Snowshoe, Sokoke, Somali, Sphynx, Thai, Toybob, Toyger, York, Bolognese, Chihuahua, Dalmatin, Maltese, Norrbottenspitz, Stabijhoun, Xoloitzcuintle
     case Bombay = "Bombay(Asian)"
     case Burmilla = "Burmilla(Asian)"

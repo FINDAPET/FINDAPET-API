@@ -6,8 +6,9 @@
 //
 
 import Foundation
+import Vapor
 
-enum PetType: String, Codable {
+enum PetType: String, Content, CaseIterable {
     case dog = "A Dog"
     case cat = "A Cat"
 }
