@@ -17,10 +17,10 @@ struct DealModeController: RouteCollection {
         userTokenProtected.get("all", use: self.index(req:))
     }
     
-    private func index(req: Request) throws -> [DealMode] {
+    private func index(req: Request) throws -> [String] {
         _ = try req.auth.require(User.self)
         
-        return DealMode.allCases
+        return DealMode.allCases.map { $0.rawValue }
     }
     
 }

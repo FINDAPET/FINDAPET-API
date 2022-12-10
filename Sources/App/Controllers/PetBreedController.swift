@@ -19,22 +19,22 @@ struct PetBreedController: RouteCollection {
         userTokenProtected.get("all", "cats", use: self.cats(req:))
     }
     
-    private func index(req: Request) throws -> [PetBreed] {
+    private func index(req: Request) throws -> [String] {
         _ = try req.auth.require(User.self)
         
-        return PetBreed.allCases
+        return PetBreed.allCases.map { $0.rawValue }
     }
     
-    private func cats(req: Request) throws -> [PetBreed] {
+    private func cats(req: Request) throws -> [String] {
         _ = try req.auth.require(User.self)
         
-        return PetBreed.allCatBreeds
+        return PetBreed.allCatBreeds.map { $0.rawValue }
     }
     
-    private func dogs(req: Request) throws -> [PetBreed] {
+    private func dogs(req: Request) throws -> [String] {
         _ = try req.auth.require(User.self)
         
-        return PetBreed.allDogBreeds
+        return PetBreed.allDogBreeds.map { $0.rawValue }
     }
     
 }

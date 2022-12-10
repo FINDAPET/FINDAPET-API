@@ -17,10 +17,10 @@ struct PetClassController: RouteCollection {
         userTokenProtected.get("all", use: self.index(req:))
     }
     
-    private func index(req: Request) throws -> [PetClass] {
+    private func index(req: Request) throws -> [String] {
         _ = try req.auth.require(User.self)
         
-        return PetClass.allCases
+        return PetClass.allCases.map { $0.rawValue }
     }
     
 }

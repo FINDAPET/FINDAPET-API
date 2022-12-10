@@ -17,10 +17,10 @@ struct CurrencyController: RouteCollection {
         userTokenProtected.get("all", use: self.index(req:))
     }
     
-    private func index(req: Request) throws -> [Currency] {
+    private func index(req: Request) throws -> [String] {
         _ = try req.auth.require(User.self)
         
-        return Currency.allCases
+        return Currency.allCases.map { $0.rawValue }
     }
     
 }
