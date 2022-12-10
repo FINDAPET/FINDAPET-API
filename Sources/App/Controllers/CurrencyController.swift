@@ -11,7 +11,7 @@ import Vapor
 struct CurrencyController: RouteCollection {
     
     func boot(routes: RoutesBuilder) throws {
-        let dealModel = routes.grouped("currencyes")
+        let dealModel = routes.grouped("currencies")
         let userTokenProtected = dealModel.grouped(UserToken.authenticator())
         
         userTokenProtected.get("all", use: self.index(req:))
