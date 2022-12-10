@@ -17,7 +17,7 @@ struct PetTypeController: RouteCollection {
         userTokenProtected.get("all", use: self.index(req:))
     }
     
-    func index(req: Request) throws -> [PetType] {
+    private func index(req: Request) throws -> [PetType] {
         _ = try req.auth.require(User.self)
         
         return PetType.allCases

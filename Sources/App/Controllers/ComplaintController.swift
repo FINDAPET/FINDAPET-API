@@ -21,7 +21,7 @@ struct ComplaintController: RouteCollection {
         userTokenProtected.delete(":complaintID", "delete", use: self.delete(req:))
     }
     
-    func index(req: Request) async throws -> [Complaint.Output] {
+    private func index(req: Request) async throws -> [Complaint.Output] {
         var complaints = [Complaint.Output]()
         
         guard try req.auth.require(User.self).isAdmin else {
@@ -143,7 +143,7 @@ struct ComplaintController: RouteCollection {
         return complaints
     }
     
-    func complaint(req: Request) async throws -> Complaint.Output {
+    private func complaint(req: Request) async throws -> Complaint.Output {
         guard try req.auth.require(User.self).isAdmin else {
             throw Abort(.badRequest)
         }
@@ -260,7 +260,7 @@ struct ComplaintController: RouteCollection {
         )
     }
     
-    func create(req: Request) async throws -> HTTPStatus {
+    private func create(req: Request) async throws -> HTTPStatus {
         _ = try req.auth.require(User.self)
         let input = try req.content.decode(Complaint.Input.self)
         
@@ -269,7 +269,7 @@ struct ComplaintController: RouteCollection {
         return .ok
     }
     
-    func change(req: Request) async throws -> HTTPStatus {
+    private func change(req: Request) async throws -> HTTPStatus {
         guard try req.auth.require(User.self).isAdmin else {
             throw Abort(.badRequest)
         }
@@ -290,7 +290,7 @@ struct ComplaintController: RouteCollection {
         return .ok
     }
     
-    func delete(req: Request) async throws -> HTTPStatus {
+    private func delete(req: Request) async throws -> HTTPStatus {
         guard try req.auth.require(User.self).isAdmin else {
             throw Abort(.badRequest)
         }

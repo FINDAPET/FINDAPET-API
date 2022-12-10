@@ -21,7 +21,7 @@ struct NotificationScreenController: RouteCollection {
         userTokenProtected.delete(":notificationScreenID", "delete", use: self.delete(req:))
     }
     
-    func index(req: Request) async throws -> [NotificationScreen.Output] {
+    private func index(req: Request) async throws -> [NotificationScreen.Output] {
         _ = try req.auth.require(User.self)
         var outputs = [NotificationScreen.Output]()
         
@@ -45,7 +45,7 @@ struct NotificationScreenController: RouteCollection {
         return outputs
     }
     
-    func notificationScreen(req: Request) async throws -> NotificationScreen.Output {
+    private func notificationScreen(req: Request) async throws -> NotificationScreen.Output {
         guard try req.auth.require(User.self).isAdmin else {
             throw Abort(.badRequest)
         }
@@ -66,7 +66,7 @@ struct NotificationScreenController: RouteCollection {
         )
     }
     
-    func create(req: Request) async throws -> HTTPStatus {
+    private func create(req: Request) async throws -> HTTPStatus {
         guard try req.auth.require(User.self).isAdmin else {
             throw Abort(.badRequest)
         }
@@ -90,7 +90,7 @@ struct NotificationScreenController: RouteCollection {
         return .ok
     }
     
-    func change(req: Request) async throws -> HTTPStatus {
+    private func change(req: Request) async throws -> HTTPStatus {
         guard try req.auth.require(User.self).isAdmin else {
             throw Abort(.badRequest)
         }
@@ -116,7 +116,7 @@ struct NotificationScreenController: RouteCollection {
         return .ok
     }
     
-    func delete(req: Request) async throws -> HTTPStatus {
+    private func delete(req: Request) async throws -> HTTPStatus {
         guard try req.auth.require(User.self).isAdmin else {
             throw Abort(.badRequest)
         }

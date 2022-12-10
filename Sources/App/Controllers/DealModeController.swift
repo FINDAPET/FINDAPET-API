@@ -17,7 +17,7 @@ struct DealModeController: RouteCollection {
         userTokenProtected.get("all", use: self.index(req:))
     }
     
-    func index(req: Request) throws -> [DealMode] {
+    private func index(req: Request) throws -> [DealMode] {
         _ = try req.auth.require(User.self)
         
         return DealMode.allCases

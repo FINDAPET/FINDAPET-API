@@ -15,12 +15,26 @@ struct PetBreedController: RouteCollection {
         let userTokenProtected = dealModel.grouped(UserToken.authenticator())
         
         userTokenProtected.get("all", use: self.index(req:))
+        userTokenProtected.get("all", "dogs", use: self.dogs(req:))
+        userTokenProtected.get("all", "cats", use: self.cats(req:))
     }
     
-    func index(req: Request) throws -> [PetBreed] {
+    private func index(req: Request) throws -> [PetBreed] {
         _ = try req.auth.require(User.self)
         
         return PetBreed.allCases
+    }
+    
+    private func cats(req: Request) throws -> [PetBreed] {
+        _ = try req.auth.require(User.self)
+        
+        return PetBreed.allCatBreeds
+    }
+    
+    private func dogs(req: Request) throws -> [PetBreed] {
+        _ = try req.auth.require(User.self)
+        
+        return PetBreed.allDogBreeds
     }
     
 }

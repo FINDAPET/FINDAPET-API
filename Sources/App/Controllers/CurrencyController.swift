@@ -17,7 +17,7 @@ struct CurrencyController: RouteCollection {
         userTokenProtected.get("all", use: self.index(req:))
     }
     
-    func index(req: Request) throws -> [Currency] {
+    private func index(req: Request) throws -> [Currency] {
         _ = try req.auth.require(User.self)
         
         return Currency.allCases
