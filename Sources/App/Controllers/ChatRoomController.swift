@@ -20,6 +20,7 @@ struct ChatRoomController: RouteCollection {
         userTokenProtected.get("chat", "with", ":userID", use: self.chatRoomWithUser(req:))
         userTokenProtected.post("new", use: self.create(req:))
         userTokenProtected.put("change", use: self.change(req:))
+        userTokenProtected.put(":chatRoomID", "messages", "view", use: self.viewAllMessages(req:))
         userTokenProtected.webSocket("with", ":userID", onUpgrade: self.chatRoomWebSocket(req:ws:))
         userTokenProtected.delete("delete", ":chatRoomID", use: self.delete(req:))
     }
@@ -268,6 +269,30 @@ struct ChatRoomController: RouteCollection {
         return .ok
     }
     
+    private func viewAllMessages(req: Request) async throws -> HTTPStatus {
+        let user = try req.auth.require(User.self)
+        
+        guard let chatRoom = try await ChatRoom.find(req.parameters.get("chatRoomID"), on: req.db), let userID = user.id else {
+            throw Abort(.notFound)
+        }
+        
+        guard chatRoom.usersID.contains(userID) || user.isAdmin else {
+            throw Abort(.badRequest)
+        }
+        
+        for message in try await chatRoom.$messages.get(on: req.db).filter({ !$0.isViewed }) {
+            guard let id = try? await message.$user.get(on: req.db).id, id != userID else {
+                continue
+            }
+            
+            message.isViewed = true
+            
+            try? await message.save(on: req.db)
+        }
+        
+        return .ok
+    }
+    
     private func delete(req: Request) async throws -> HTTPStatus {
         guard try req.auth.require(User.self).isAdmin else {
             throw Abort(.badRequest)
@@ -356,6 +381,11 @@ struct ChatRoomController: RouteCollection {
                 for userWebSocket in ChatRoomWebSocketManager.shared.chatRoomWebSockets
                     .filter({ $0.id == chatRoomID }).first?.users ?? [UserWebSocket]() {
                     if userWebSocket.id == secondUserID, let data = try? JSONEncoder().encode(message){
+                        if !message.isViewed {
+                            message.isViewed = true
+                            
+                            try? await message.save(on: req.db)
+                        }
                         try? await userWebSocket.ws.send([UInt8](data))
                         try? await UserWebSocketManager.shared.userWebSockets
                             .filter { $0.id == secondUserID }.first?.ws.send("update")

@@ -19,6 +19,9 @@ final class Message: Model, Content {
     @Field(key: "text")
     var text: String
     
+    @Field(key: "is_viewed")
+    var isViewed: Bool
+    
     @OptionalField(key: "body_path")
     var bodyPath: String?
     
@@ -33,9 +36,10 @@ final class Message: Model, Content {
     
     init() { }
     
-    init(id: UUID? = nil, text: String, bodyPath: String? = nil, createdAt: Date? = nil, userID: User.IDValue, chatRoomID: User.IDValue) {
+    init(id: UUID? = nil, text: String, isViewed: Bool = false, bodyPath: String? = nil, createdAt: Date? = nil, userID: User.IDValue, chatRoomID: User.IDValue) {
         self.id = id
         self.text = text
+        self.isViewed = isViewed
         self.bodyPath = bodyPath
         self.$createdAt.timestamp = createdAt
         self.$user.id = userID

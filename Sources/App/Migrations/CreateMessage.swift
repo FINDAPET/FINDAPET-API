@@ -14,6 +14,7 @@ struct CreateMessage: AsyncMigration {
         try await database.schema(Message.schema)
             .id()
             .field("text", .string, .required)
+            .field("is_viewed", .bool)
             .field("body_path", .string)
             .field("created_at", .date)
             .field("updated_at", .date)
