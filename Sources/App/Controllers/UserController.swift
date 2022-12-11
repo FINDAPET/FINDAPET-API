@@ -859,6 +859,7 @@ struct UserController: RouteCollection {
                         messages.append(Message.Output(
                             id: message.id,
                             text: message.text,
+                            isViewed: message.isViewed,
                             bodyData: bodyData,
                             user: User.Output(
                                 id: messageUser.id,

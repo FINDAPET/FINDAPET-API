@@ -48,6 +48,7 @@ struct MessageController: RouteCollection {
                 messages.append(Message.Output(
                     id: message.id,
                     text: message.text,
+                    isViewed: message.isViewed,
                     user: User.Output(
                         id: messageUser.id,
                         name: messageUser.name,
@@ -85,6 +86,7 @@ struct MessageController: RouteCollection {
         return Message.Output(
             id: message.id,
             text: message.text,
+            isViewed: message.isViewed,
             user: User.Output(
                 id: messageUser.id,
                 name: messageUser.name,

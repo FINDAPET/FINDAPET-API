@@ -47,6 +47,7 @@ struct ChatRoomController: RouteCollection {
                         messages.append(Message.Output(
                             id: message.id,
                             text: message.text,
+                            isViewed: message.isViewed,
                             user: User.Output(
                                 id: messageUser.id,
                                 name: messageUser.name,
@@ -116,6 +117,7 @@ struct ChatRoomController: RouteCollection {
                 messages.append(Message.Output(
                     id: message.id,
                     text: message.text,
+                    isViewed: message.isViewed,
                     user: User.Output(
                         id: messageUser.id,
                         name: messageUser.name,
@@ -185,6 +187,7 @@ struct ChatRoomController: RouteCollection {
                 messages.append(Message.Output(
                     id: message.id,
                     text: message.text,
+                    isViewed: message.isViewed,
                     user: User.Output(
                         id: messageUser.id,
                         name: messageUser.name,
