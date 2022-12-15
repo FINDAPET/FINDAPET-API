@@ -33,6 +33,10 @@ struct DealController: RouteCollection {
         var deals = try await Deal.query(on: req.db).all()
         var dealsOutput = [Deal.Output]()
         
+        if !user.isAdmin {
+            deals = deals.filter { $0.buyer == nil }
+        }
+        
         self.filterDeals(deals: &deals, filter: filter)
         
         for deal in deals {
