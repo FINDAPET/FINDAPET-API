@@ -48,6 +48,9 @@ struct OfferController: RouteCollection {
                 catteryPhtotData = try? await FileManager.get(req: req, with: path)
             }
             
+            let petType = try await deal.$petType.get(on: req.db)
+            let petBreed = try await deal.$petBreed.get(on: req.db)
+            
             offersOutput.append(Offer.Output(
                 id: offer.id,
                 price: offer.price,
@@ -75,8 +78,13 @@ struct OfferController: RouteCollection {
                     isActive: deal.isActive,
                     viewsCount: deal.viewsCount,
                     mode: deal.mode,
-                    petType: deal.petType,
-                    petBreed: deal.petBreed,
+                    petType: .init(
+                        id: petType.id,
+                        localizedNames: petType.localizedNames,
+                        imageData: (try? await FileManager.get(req: req, with: petType.imagePath)) ?? .init(),
+                        petBreeds: try await petType.$petBreeds.get(on: req.db)
+                    ),
+                    petBreed: .init(id: petBreed.id, name: petBreed.name, petType: petType),
                     petClass: deal.petClass,
                     isMale: deal.isMale,
                     age: deal.age,

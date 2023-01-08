@@ -266,6 +266,9 @@ struct UserController: RouteCollection {
                 }
             }
             
+            let petType = try await deal.$petType.get(on: req.db)
+            let petBreed = try await deal.$petBreed.get(on: req.db)
+            
             deals.append(Deal.Output(
                 id: deal.id,
                 title: deal.title,
@@ -275,8 +278,13 @@ struct UserController: RouteCollection {
                 isActive: deal.isActive,
                 viewsCount: deal.viewsCount,
                 mode: deal.mode,
-                petType: deal.petType,
-                petBreed: deal.petBreed,
+                petType: .init(
+                    id: petType.id,
+                    localizedNames: petType.localizedNames,
+                    imageData: (try? await FileManager.get(req: req, with: petType.imagePath)) ?? .init(),
+                    petBreeds: try await petType.$petBreeds.get(on: req.db)
+                ),
+                petBreed: .init(id: petBreed.id, name: petBreed.name, petType: petType),
                 petClass: deal.petClass,
                 isMale: deal.isMale,
                 age: deal.age,
@@ -320,6 +328,9 @@ struct UserController: RouteCollection {
                 }
             }
             
+            let petType = try await deal.$petType.get(on: req.db)
+            let petBreed = try await deal.$petBreed.get(on: req.db)
+            
             boughtDeals.append(Deal.Output(
                 id: deal.id,
                 title: deal.title,
@@ -329,8 +340,13 @@ struct UserController: RouteCollection {
                 isActive: deal.isActive,
                 viewsCount: deal.viewsCount,
                 mode: deal.mode,
-                petType: deal.petType,
-                petBreed: deal.petBreed,
+                petType: .init(
+                    id: petType.id,
+                    localizedNames: petType.localizedNames,
+                    imageData: (try? await FileManager.get(req: req, with: petType.imagePath)) ?? .init(),
+                    petBreeds: try await petType.$petBreeds.get(on: req.db)
+                ),
+                petBreed: .init(id: petBreed.id, name: petBreed.name, petType: petType),
                 petClass: deal.petClass,
                 isMale: deal.isMale,
                 age: deal.age,
@@ -400,6 +416,9 @@ struct UserController: RouteCollection {
                 buyerAvatarData = try? await FileManager.get(req: req, with: path)
             }
             
+            let petType = try await deal.$petType.get(on: req.db)
+            let petBreed = try await deal.$petBreed.get(on: req.db)
+            
             offers.append(Offer.Output(
                 price: myOffer.price,
                 currencyName: myOffer.currencyName,
@@ -422,8 +441,13 @@ struct UserController: RouteCollection {
                     isActive: deal.isActive,
                     viewsCount: deal.viewsCount,
                     mode: deal.mode,
-                    petType: deal.petType,
-                    petBreed: deal.petBreed,
+                    petType: .init(
+                        id: petType.id,
+                        localizedNames: petType.localizedNames,
+                        imageData: (try? await FileManager.get(req: req, with: petType.imagePath)) ?? .init(),
+                        petBreeds: try await petType.$petBreeds.get(on: req.db)
+                    ),
+                    petBreed: .init(id: petBreed.id, name: petBreed.name, petType: petType),
                     petClass: deal.petClass,
                     isMale: deal.isMale,
                     age: deal.age,
@@ -473,6 +497,9 @@ struct UserController: RouteCollection {
                 buyerAvatarData = try? await FileManager.get(req: req, with: path)
             }
             
+            let petType = try await deal.$petType.get(on: req.db)
+            let petBreed = try await deal.$petBreed.get(on: req.db)
+            
             myOffers.append(Offer.Output(
                 price: offer.price,
                 currencyName: offer.currencyName,
@@ -495,8 +522,13 @@ struct UserController: RouteCollection {
                     isActive: deal.isActive,
                     viewsCount: deal.viewsCount,
                     mode: deal.mode,
-                    petType: deal.petType,
-                    petBreed: deal.petBreed,
+                    petType: .init(
+                        id: petType.id,
+                        localizedNames: petType.localizedNames,
+                        imageData: (try? await FileManager.get(req: req, with: petType.imagePath)) ?? .init(),
+                        petBreeds: try await petType.$petBreeds.get(on: req.db)
+                    ),
+                    petBreed: .init(id: petBreed.id, name: petBreed.name, petType: petType),
                     petClass: deal.petClass,
                     isMale: deal.isMale,
                     age: deal.age,
@@ -577,6 +609,9 @@ struct UserController: RouteCollection {
                 }
             }
             
+            let petType = try await deal.$petType.get(on: req.db)
+            let petBreed = try await deal.$petBreed.get(on: req.db)
+            
             deals.append(Deal.Output(
                 id: deal.id,
                 title: deal.title,
@@ -586,8 +621,13 @@ struct UserController: RouteCollection {
                 isActive: deal.isActive,
                 viewsCount: deal.viewsCount,
                 mode: deal.mode,
-                petType: deal.petType,
-                petBreed: deal.petBreed,
+                petType: .init(
+                    id: petType.id,
+                    localizedNames: petType.localizedNames,
+                    imageData: (try? await FileManager.get(req: req, with: petType.imagePath)) ?? .init(),
+                    petBreeds: try await petType.$petBreeds.get(on: req.db)
+                ),
+                petBreed: .init(id: petBreed.id, name: petBreed.name, petType: petType),
                 petClass: deal.petClass,
                 isMale: deal.isMale,
                 age: deal.age,
@@ -631,6 +671,9 @@ struct UserController: RouteCollection {
                 }
             }
             
+            let petType = try await deal.$petType.get(on: req.db)
+            let petBreed = try await deal.$petBreed.get(on: req.db)
+            
             boughtDeals.append(Deal.Output(
                 id: deal.id,
                 title: deal.title,
@@ -640,8 +683,13 @@ struct UserController: RouteCollection {
                 isActive: deal.isActive,
                 viewsCount: deal.viewsCount,
                 mode: deal.mode,
-                petType: deal.petType,
-                petBreed: deal.petBreed,
+                petType: .init(
+                    id: petType.id,
+                    localizedNames: petType.localizedNames,
+                    imageData: (try? await FileManager.get(req: req, with: petType.imagePath)) ?? .init(),
+                    petBreeds: try await petType.$petBreeds.get(on: req.db)
+                ),
+                petBreed: .init(id: petBreed.id, name: petBreed.name, petType: petType),
                 petClass: deal.petClass,
                 isMale: deal.isMale,
                 age: deal.age,
@@ -711,6 +759,9 @@ struct UserController: RouteCollection {
                 buyerAvatarData = try? await FileManager.get(req: req, with: path)
             }
             
+            let petType = try await deal.$petType.get(on: req.db)
+            let petBreed = try await deal.$petBreed.get(on: req.db)
+            
             myOffers.append(Offer.Output(
                 price: myOffer.price,
                 currencyName: myOffer.currencyName,
@@ -733,8 +784,13 @@ struct UserController: RouteCollection {
                     isActive: deal.isActive,
                     viewsCount: deal.viewsCount,
                     mode: deal.mode,
-                    petType: deal.petType,
-                    petBreed: deal.petBreed,
+                    petType: .init(
+                        id: petType.id,
+                        localizedNames: petType.localizedNames,
+                        imageData: (try? await FileManager.get(req: req, with: petType.imagePath)) ?? .init(),
+                        petBreeds: try await petType.$petBreeds.get(on: req.db)
+                    ),
+                    petBreed: .init(id: petBreed.id, name: petBreed.name, petType: petType),
                     petClass: deal.petClass,
                     isMale: deal.isMale,
                     age: deal.age,
@@ -784,6 +840,9 @@ struct UserController: RouteCollection {
                 buyerAvatarData = try? await FileManager.get(req: req, with: path)
             }
             
+            let petType = try await deal.$petType.get(on: req.db)
+            let petBreed = try await deal.$petBreed.get(on: req.db)
+            
             offers.append(Offer.Output(
                 price: offer.price,
                 currencyName: offer.currencyName,
@@ -806,8 +865,13 @@ struct UserController: RouteCollection {
                     isActive: deal.isActive,
                     viewsCount: deal.viewsCount,
                     mode: deal.mode,
-                    petType: deal.petType,
-                    petBreed: deal.petBreed,
+                    petType: .init(
+                        id: petType.id,
+                        localizedNames: petType.localizedNames,
+                        imageData: (try? await FileManager.get(req: req, with: petType.imagePath)) ?? .init(),
+                        petBreeds: try await petType.$petBreeds.get(on: req.db)
+                    ),
+                    petBreed: .init(id: petBreed.id, name: petBreed.name, petType: petType),
                     petClass: deal.petClass,
                     isMale: deal.isMale,
                     age: deal.age,
@@ -1077,14 +1141,14 @@ struct UserController: RouteCollection {
         
         if let avatarData = newUser.avatarData,
            let avatarPath = oldUser.avatarPath != nil && oldUser.avatarPath != "" ? oldUser.avatarPath : req.application.directory.publicDirectory.appending(UUID().uuidString) {
-            try await FileManager.set(req: req, with: avatarPath, data: avatarData)
+            try! await FileManager.set(req: req, with: avatarPath, data: avatarData)
 
             oldUser.avatarPath = avatarPath
         }
         
         if let documentData = newUser.documentData,
            let documentPath = oldUser.documentPath != nil ? oldUser.documentPath : req.application.directory.publicDirectory.appending(UUID().uuidString) {
-            try await FileManager.set(req: req, with: documentPath, data: documentData)
+            try! await FileManager.set(req: req, with: documentPath, data: documentData)
 
             oldUser.documentPath = documentPath
         }

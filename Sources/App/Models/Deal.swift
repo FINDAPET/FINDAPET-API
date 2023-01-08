@@ -37,11 +37,11 @@ final class Deal: Model, Content {
     @Field(key: "mode")
     var mode: String
     
-    @Field(key: "pet_type")
-    var petType: String
+    @Parent(key: "pet_type")
+    var petType: PetType
     
-    @Field(key: "pet_breed")
-    var petBreed: String
+    @Parent(key: "pet_breed")
+    var petBreed: PetBreed
     
     @Field(key: "pet_class")
     var petClass: String
@@ -99,7 +99,7 @@ final class Deal: Model, Content {
         
     init() {}
     
-    init(id: UUID? = nil, title: String, photoPaths: [String], tags: [String] = [String](), isPremiumDeal: Bool = false, isActive: Bool = true, viewsCount: Int = 0, mode: String, petType: String, petBreed: String, petClass: String, isMale: Bool, age: String, color: String, price: Double, catteryID: User.IDValue, currencyName: String, country: String? = nil, city: String? = nil, description: String? = nil, whatsappNumber: String? = nil, telegramUsername: String? = nil, instagramUsername: String? = nil, facebookUsername: String? = nil, vkUsername: String? = nil, mail: String? = nil, buyerID: User.IDValue? = nil) {
+    init(id: UUID? = nil, title: String, photoPaths: [String], tags: [String] = [String](), isPremiumDeal: Bool = false, isActive: Bool = true, viewsCount: Int = 0, mode: String, petTypeID: PetType.IDValue, petBreedID: PetBreed.IDValue, petClass: String, isMale: Bool, age: String, color: String, price: Double, catteryID: User.IDValue, currencyName: String, country: String? = nil, city: String? = nil, description: String? = nil, whatsappNumber: String? = nil, telegramUsername: String? = nil, instagramUsername: String? = nil, facebookUsername: String? = nil, vkUsername: String? = nil, mail: String? = nil, buyerID: User.IDValue? = nil) {
         self.id = id
         self.title = title
         self.photoPaths = photoPaths
@@ -108,8 +108,8 @@ final class Deal: Model, Content {
         self.isActive = isActive
         self.viewsCount = viewsCount
         self.mode = mode
-        self.petType = petType
-        self.petBreed = petBreed
+        self.$petType.id = petTypeID
+        self.$petBreed.id = petBreedID
         self.petClass = petClass
         self.isMale = isMale
         self.age = age
@@ -140,8 +140,8 @@ extension Deal {
         var isPremiumDeal: Bool
         var isActive: Bool
         var mode: DealMode
-        var petType: PetType
-        var petBreed: PetBreed
+        var petTypeID: PetType.IDValue
+        var petBreedID: PetBreed.IDValue
         var petClass: PetClass
         var isMale: Bool
         var age: String
@@ -160,7 +160,7 @@ extension Deal {
         var mail: String?
         var buyerID: User.IDValue?
         
-        init(id: UUID? = nil, title: String, photoDatas: [Data], tags: [String] = [String](), isPremiumDeal: Bool = false, isActive: Bool = true, mode: DealMode, petType: PetType, petBreed: PetBreed, petClass: PetClass, isMale: Bool, age: String, color: String, price: Double, catteryID: User.IDValue, currencyName: Currency, country: String? = nil, city: String? = nil, description: String? = nil, whatsappNumber: String? = nil, telegramUsername: String? = nil, instagramUsername: String? = nil, facebookUsername: String? = nil, vkUsername: String? = nil, mail: String? = nil, buyerID: User.IDValue?) {
+        init(id: UUID? = nil, title: String, photoDatas: [Data], tags: [String] = [String](), isPremiumDeal: Bool = false, isActive: Bool = true, mode: DealMode, petTypeID: PetType.IDValue, petBreedID: PetBreed.IDValue, petClass: PetClass, isMale: Bool, age: String, color: String, price: Double, catteryID: User.IDValue, currencyName: Currency, country: String? = nil, city: String? = nil, description: String? = nil, whatsappNumber: String? = nil, telegramUsername: String? = nil, instagramUsername: String? = nil, facebookUsername: String? = nil, vkUsername: String? = nil, mail: String? = nil, buyerID: User.IDValue?) {
             self.id = id
             self.title = title
             self.photoDatas = photoDatas
@@ -168,8 +168,8 @@ extension Deal {
             self.isPremiumDeal = isPremiumDeal
             self.isActive = isActive
             self.mode = mode
-            self.petType = petType
-            self.petBreed = petBreed
+            self.petTypeID = petTypeID
+            self.petBreedID = petBreedID
             self.petClass = petClass
             self.isMale = isMale
             self.age = age
@@ -201,8 +201,8 @@ extension Deal {
         var isActive: Bool
         var viewsCount: Int
         var mode: String
-        var petType: String
-        var petBreed: String
+        var petType: PetType.Output
+        var petBreed: PetBreed.Output
         var petClass: String
         var isMale: Bool
         var age: String

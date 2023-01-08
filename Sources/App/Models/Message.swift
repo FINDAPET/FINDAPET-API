@@ -17,7 +17,7 @@ final class Message: Model, Content {
     var id: UUID?
     
     @Field(key: "text")
-    var text: String
+    var text: String?
     
     @Field(key: "is_viewed")
     var isViewed: Bool
@@ -36,7 +36,7 @@ final class Message: Model, Content {
     
     init() { }
     
-    init(id: UUID? = nil, text: String, isViewed: Bool = false, bodyPath: String? = nil, createdAt: Date? = nil, userID: User.IDValue, chatRoomID: User.IDValue) {
+    init(id: UUID? = nil, text: String? = nil, isViewed: Bool = false, bodyPath: String? = nil, createdAt: Date? = nil, userID: User.IDValue, chatRoomID: User.IDValue) {
         self.id = id
         self.text = text
         self.isViewed = isViewed
@@ -51,7 +51,7 @@ final class Message: Model, Content {
 extension Message {
     struct Input: Content {
         var id: UUID?
-        var text: String
+        var text: String?
         var isViewed: Bool
         var bodyData: Data?
         var userID: User.IDValue
@@ -59,7 +59,7 @@ extension Message {
         
         init(
             id: UUID? = nil,
-            text: String,
+            text: String? = nil,
             isViewed: Bool = false,
             bodyData: Data? = nil,
             userID: User.IDValue,
@@ -78,7 +78,7 @@ extension Message {
 extension Message {
     struct Output: Content {
         var id: UUID?
-        var text: String
+        var text: String?
         var isViewed: Bool
         var bodyData: Data?
         var user: User.Output

@@ -22,7 +22,7 @@ let package = Package(
                 .product(name: "FluentPostgresDriver", package: "fluent-postgres-driver"),
                 .product(name: "Leaf", package: "leaf"),
                 .product(name: "Vapor", package: "vapor"),
-                .product(name: "APNS", package: "apns")
+                .product(name: "APNS", package: "apns"),
             ],
             swiftSettings: [
                 // Enable better optimizations when building in Release configuration. Despite the use of

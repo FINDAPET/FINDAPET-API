@@ -44,7 +44,9 @@ public func configure(_ app: Application) throws {
         CreateChatRoom(),
         CreateMessage(),
         CreateComplaint(),
-        CreateNotificationScreen()
+        CreateNotificationScreen(),
+        CreatePetBreed(),
+        CreatePetType()
     )
     
     #if DEBUG

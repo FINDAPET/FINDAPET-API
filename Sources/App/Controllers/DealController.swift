@@ -15,7 +15,7 @@ struct DealController: RouteCollection {
         let deals = routes.grouped("deals")
         let userTokenProtected = deals.grouped(UserToken.authenticator())
         
-        userTokenProtected.get("all", use: self.index(req:))
+        userTokenProtected.put("all", use: self.index(req:))
         userTokenProtected.get(":dealID", use: self.someDeal(req:))
         userTokenProtected.get(":dealID", "offers", use: self.dealOffers(req:))
         userTokenProtected.post("new", use: self.create(req:))
@@ -48,6 +48,9 @@ struct DealController: RouteCollection {
                 }
             }
             
+            let petType = try await deal.$petType.get(on: req.db)
+            let petBreed = try await deal.$petBreed.get(on: req.db)
+            
             dealsOutput.append(Deal.Output(
                 id: deal.id,
                 title: deal.title,
@@ -57,8 +60,13 @@ struct DealController: RouteCollection {
                 isActive: deal.isActive,
                 viewsCount: deal.viewsCount,
                 mode: deal.mode,
-                petType: deal.petType,
-                petBreed: deal.petBreed,
+                petType: .init(
+                    id: petType.id,
+                    localizedNames: petType.localizedNames,
+                    imageData: (try? await FileManager.get(req: req, with: petType.imagePath)) ?? .init(),
+                    petBreeds: try await petType.$petBreeds.get(on: req.db)
+                ),
+                petBreed: .init(id: petBreed.id, name: petBreed.name, petType: petType),
                 petClass: deal.petClass,
                 isMale: deal.isMale,
                 age: deal.age,
@@ -135,6 +143,9 @@ struct DealController: RouteCollection {
                 offerBuyerAvatarData = try? await FileManager.get(req: req, with: path)
             }
             
+            let petType = try await deal.$petType.get(on: req.db)
+            let petBreed = try await deal.$petBreed.get(on: req.db)
+            
             offersOutput.append(Offer.Output(
                 id: offer.id,
                 price: offer.price,
@@ -162,8 +173,13 @@ struct DealController: RouteCollection {
                     isActive: deal.isActive,
                     viewsCount: deal.viewsCount,
                     mode: deal.mode,
-                    petType: deal.petType,
-                    petBreed: deal.petBreed,
+                    petType: .init(
+                        id: petType.id,
+                        localizedNames: petType.localizedNames,
+                        imageData: (try? await FileManager.get(req: req, with: petType.imagePath)) ?? .init(),
+                        petBreeds: try await petType.$petBreeds.get(on: req.db)
+                    ),
+                    petBreed: .init(id: petBreed.id, name: petBreed.name, petType: petType),
                     petClass: deal.petClass,
                     isMale: deal.isMale,
                     age: deal.age,
@@ -230,6 +246,9 @@ struct DealController: RouteCollection {
             ))
         }
         
+        let petType = try await deal.$petType.get(on: req.db)
+        let petBreed = try await deal.$petBreed.get(on: req.db)
+        
         return Deal.Output(
             id: deal.id,
             title: deal.title,
@@ -239,8 +258,13 @@ struct DealController: RouteCollection {
             isActive: deal.isActive,
             viewsCount: deal.viewsCount,
             mode: deal.mode,
-            petType: deal.petType,
-            petBreed: deal.petBreed,
+            petType: .init(
+                id: petType.id,
+                localizedNames: petType.localizedNames,
+                imageData: (try? await FileManager.get(req: req, with: petType.imagePath)) ?? .init(),
+                petBreeds: try await petType.$petBreeds.get(on: req.db)
+            ),
+            petBreed: .init(id: petBreed.id, name: petBreed.name, petType: petType),
             petClass: deal.petClass,
             isMale: deal.isMale,
             age: deal.age,
@@ -350,8 +374,8 @@ struct DealController: RouteCollection {
             isPremiumDeal: deal.isPremiumDeal || user.isPremiumUser,
             isActive: deal.isActive,
             mode: deal.mode.rawValue,
-            petType: deal.petType.rawValue,
-            petBreed: deal.petBreed.rawValue,
+            petTypeID: deal.petTypeID,
+            petBreedID: deal.petBreedID,
             petClass: deal.petClass.rawValue,
             isMale: deal.isMale,
             age: deal.age,
@@ -408,8 +432,8 @@ struct DealController: RouteCollection {
         oldDeal.age = newDeal.age
         oldDeal.isMale = newDeal.isMale
         oldDeal.petClass = newDeal.petClass.rawValue
-        oldDeal.petBreed = newDeal.petBreed.rawValue
-        oldDeal.petType = newDeal.petType.rawValue
+        oldDeal.$petBreed.id = newDeal.petBreedID
+        oldDeal.$petType.id = newDeal.petTypeID
         oldDeal.mode = newDeal.mode.rawValue
         oldDeal.title = newDeal.title
         oldDeal.description = newDeal.description
@@ -503,12 +527,12 @@ struct DealController: RouteCollection {
     private func filterDeals(deals: inout [Deal], filter: Filter? = nil) {
         deals = deals.filter { $0.isActive }
         
-        if let petType = filter?.petType, filter?.petType != .none {
-            deals = deals.filter { $0.petType == petType.rawValue }
+        if let petTypeID = filter?.petTypeID {
+            deals = deals.filter { $0.petType.id == petTypeID }
         }
         
-        if let petBreed = filter?.petBreed {
-            deals = deals.filter { $0.petBreed == petBreed.rawValue }
+        if let petBreedID = filter?.petBreedID {
+            deals = deals.filter { $0.petBreed.id == petBreedID }
         }
         
         if let petClass = filter?.petClass, petClass != .allClass {
@@ -556,8 +580,8 @@ struct DealController: RouteCollection {
     
     private struct Filter: Content {
         var title: String?
-        var petType: PetType?
-        var petBreed: PetBreed?
+        var petTypeID: PetType.IDValue?
+        var petBreedID: PetType.IDValue?
         var petClass: PetClass?
         var isMale: Bool?
         var country: String?

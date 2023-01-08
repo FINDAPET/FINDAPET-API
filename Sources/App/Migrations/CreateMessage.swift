@@ -13,7 +13,7 @@ struct CreateMessage: AsyncMigration {
     func prepare(on database: Database) async throws {
         try await database.schema(Message.schema)
             .id()
-            .field("text", .string, .required)
+            .field("text", .string)
             .field("is_viewed", .bool)
             .field("body_path", .string)
             .field("created_at", .date)
