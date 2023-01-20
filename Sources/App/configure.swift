@@ -30,7 +30,7 @@ public func configure(_ app: Application) throws {
     
     app.views.use(.leaf)
     
-    app.routes.defaultMaxBodySize = "500mb"
+    app.routes.defaultMaxBodySize = "2mb"
 
     // register routes
     try routes(app)

@@ -14,6 +14,7 @@ final class CreatePetType: AsyncMigration {
         try await database.schema(PetType.schema)
             .id()
             .field("localized_names", .dictionary(of: .string), .required)
+            .field("image_path", .string, .required)
             .create()
     }
     
