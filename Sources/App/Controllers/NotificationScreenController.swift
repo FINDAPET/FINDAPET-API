@@ -38,7 +38,8 @@ struct NotificationScreenController: RouteCollection {
                 buttonTitle: notificationScreen.buttonTitle,
                 textColorHEX: notificationScreen.textColorHEX,
                 buttonTitleColorHEX: notificationScreen.buttonTitleColorHEX,
-                buttonColorHEX: notificationScreen.buttonTitleColorHEX
+                buttonColorHEX: notificationScreen.buttonTitleColorHEX,
+                isRequired: notificationScreen.isRequired
             ))
         }
         
@@ -62,7 +63,8 @@ struct NotificationScreenController: RouteCollection {
             buttonTitle: notificationScreen.buttonTitle,
             textColorHEX: notificationScreen.textColorHEX,
             buttonTitleColorHEX: notificationScreen.buttonTitleColorHEX,
-            buttonColorHEX: notificationScreen.buttonTitleColorHEX
+            buttonColorHEX: notificationScreen.buttonTitleColorHEX,
+            isRequired: notificationScreen.isRequired
         )
     }
     
@@ -84,7 +86,8 @@ struct NotificationScreenController: RouteCollection {
             buttonTitle: input.buttonTitle,
             textColorHEX: input.textColorHEX,
             buttonTitleColorHEX: input.buttonTitleColorHEX,
-            buttonColorHEX: input.buttonColorHEX
+            buttonColorHEX: input.buttonColorHEX,
+            isRequired: input.isRequired
         ).save(on: req.db)
         
         return .ok

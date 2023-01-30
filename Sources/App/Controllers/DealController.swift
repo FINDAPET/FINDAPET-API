@@ -8,6 +8,7 @@
 import Foundation
 import Vapor
 import APNS
+import FluentKit
 
 struct DealController: RouteCollection {
     
@@ -30,15 +31,37 @@ struct DealController: RouteCollection {
     private func index(req: Request) async throws -> [Deal.Output] {
         let user = try req.auth.require(User.self)
         let filter = try? req.content.decode(Filter.self)
-        var deals = try await Deal.query(on: req.db).all()
+        var query = Deal.query(on: req.db)
         var dealsOutput = [Deal.Output]()
+        
+        self.filterDeals(deals: &query, filter: filter)
+        
+        var deals = try await query.range(..<10).all()
+        
+        if let title = filter?.title {
+            let titleWords = title.split(separator: " ")
+            
+            deals = deals.filter { deal in
+                let words = deal.title.split(separator: " ")
+                var count = 0
+                
+                for titleWord in titleWords {
+                    if words.contains(titleWord) || deal.tags.contains(String(titleWord)) { count += 1 }
+                    if count >= 3 { break }
+                }
+                
+                if count < 3 {
+                    return false
+                }
+                
+                return true
+            }
+        }
         
         if !user.isAdmin {
             deals = deals.filter { $0.buyer == nil }
         }
-        
-        self.filterDeals(deals: &deals, filter: filter)
-        
+                
         for deal in deals {
             var photoDatas = [Data]()
             
@@ -524,68 +547,65 @@ struct DealController: RouteCollection {
         return .ok
     }
     
-    private func filterDeals(deals: inout [Deal], filter: Filter? = nil) {
-        deals = deals.filter { $0.isActive }
+    private func filterDeals(deals: inout QueryBuilder<Deal>, filter: Filter? = nil) {
+        let checkedIDs = filter?.checkedIDs ?? .init()
+        
+        deals = deals.filter(\.$isActive == true).filter(\.$id !~ checkedIDs)
         
         if let petTypeID = filter?.petTypeID {
-            deals = deals.filter { $0.petType.id == petTypeID }
+            deals = deals.filter(\.$petType.$id == petTypeID)
         }
         
         if let petBreedID = filter?.petBreedID {
-            deals = deals.filter { $0.petBreed.id == petBreedID }
+            deals = deals.filter(\.$petBreed.$id == petBreedID)
         }
         
         if let petClass = filter?.petClass, petClass != .allClass {
-            deals = deals.filter { $0.petClass == petClass.rawValue }
+            deals = deals.filter(\.$petClass == petClass.rawValue)
         }
         
         if let isMale = filter?.isMale {
-            deals = deals.filter { $0.isMale == isMale }
+            deals = deals.filter(\.$isMale == isMale)
         }
         
         if let country = filter?.country {
-            deals = deals.filter { $0.country == country }
+            deals = deals.filter(\.$country == country)
         }
         
         if let city = filter?.city {
-            deals = deals.filter { $0.city == city }
+            deals = deals.filter(\.$city == city)
         }
-        
-        if let title = filter?.title {
-            let titleWords = title.split(separator: " ")
-            
-            deals = deals.filter { deal in
-                let words = deal.title.split(separator: " ")
-                var count = 0
-                
-                for titleWord in titleWords {
-                    if words.contains(titleWord) || deal.tags.contains(String(titleWord)) {
-                        count += 1
-                    }
-                    
-                    if count >= 3 {
-                        break
-                    }
-                }
-                
-                if count < 3 {
-                    return false
-                }
-                
-                return true
-            }
-        }
-        
     }
     
     private struct Filter: Content {
         var title: String?
         var petTypeID: PetType.IDValue?
-        var petBreedID: PetType.IDValue?
+        var petBreedID: PetBreed.IDValue?
         var petClass: PetClass?
         var isMale: Bool?
         var country: String?
         var city: String?
+        var checkedIDs: [Deal.IDValue]
+        
+        init(
+            title: String? = nil,
+            petTypeID: PetType.IDValue? = nil,
+            petBreedID: PetBreed.IDValue? = nil,
+            petClass: PetClass? = nil,
+            isMale: Bool? = nil,
+            country: String? = nil,
+            city: String? = nil,
+            checkedIDs: [UUID] = .init()
+        ) {
+            self.title = title
+            self.petTypeID = petTypeID
+            self.petBreedID = petBreedID
+            self.petClass = petClass
+            self.isMale = isMale
+            self.country = country
+            self.city = city
+            self.checkedIDs = checkedIDs
+        }
     }
     
 }
