@@ -31,6 +31,9 @@ public func configure(_ app: Application) throws {
     app.views.use(.leaf)
     
     app.routes.defaultMaxBodySize = "2mb"
+    
+    // activate subscription manager
+    SubscriptionManager.shared.start(app)
 
     // register routes
     try routes(app)
@@ -46,7 +49,9 @@ public func configure(_ app: Application) throws {
         CreateComplaint(),
         CreateNotificationScreen(),
         CreatePetBreed(),
-        CreatePetType()
+        CreatePetType(),
+        CreateSubscription(),
+        CreateTitleSubscription()
     )
     
     #if DEBUG

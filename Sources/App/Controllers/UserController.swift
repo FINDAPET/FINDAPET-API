@@ -23,6 +23,7 @@ struct UserController: RouteCollection {
         userTokenProtected.get(":userID", "offers", "my", use: self.myOffers(req:))
         userTokenProtected.get(":userID", "offers", use: self.offers(req:))
         userTokenProtected.get(":userID", use: self.someUser(req:))
+        userTokenProtected.get("subscription", use: self.subscription(req:))
         userTokenProtected.get("chats", use: self.chatRooms(req:))
         userTokenProtected.put("change", use: self.changeUser(req:))
         userTokenProtected.put("change", ":currencyName", use: self.changeUserCurrencyName(req:))
@@ -37,8 +38,6 @@ struct UserController: RouteCollection {
         userTokenProtected.put(":userID", "approove", "cattery", "admin", use: self.aprooveCatteryVerify(req:))
         userTokenProtected.put(":userID", "delete", "cattery", "admin", use: self.deleteCatteryVerify(req:))
         userTokenProtected.webSocket("update", onUpgrade: self.userWebSocket(req:ws:))
-        userTokenProtected.put("premium", use: self.makeUserPremium(req:))
-        userTokenProtected.put("not", "premium", use: self.makeUserNotPremium(req:))
     }
     
     private func index(req: Request) async throws -> [User.Output] {
@@ -52,6 +51,17 @@ struct UserController: RouteCollection {
         for user in users {
             var avatarData: Data?
             var documentData: Data?
+            var subscriptionOutput: Subscription.Output?
+            
+            if let subscription = try? await user.$subscrtiption.get(on: req.db) {
+                subscriptionOutput = .init(
+                    id: subscription.id,
+                    localizedNames: subscription.localizedNames,
+                    expirationDate: subscription.expirationDate,
+                    user: user,
+                    createdAt: subscription.createdAt
+                )
+            }
             
             if let path = user.avatarPath {
                 avatarData = try? await FileManager.get(req: req, with: path)
@@ -73,7 +83,7 @@ struct UserController: RouteCollection {
                 myOffers: [Offer.Output](),
                 offers: [Offer.Output](),
                 chatRooms: [ChatRoom.Output](),
-                isPremiumUser: user.isPremiumUser
+                subscription: subscriptionOutput
             ))
         }
         
@@ -129,6 +139,17 @@ struct UserController: RouteCollection {
         for user in users {
             var avatarData: Data?
             var documentData: Data?
+            var subscriptionOutput: Subscription.Output?
+            
+            if let subscription = try? await user.$subscrtiption.get(on: req.db) {
+                subscriptionOutput = .init(
+                    id: subscription.id,
+                    localizedNames: subscription.localizedNames,
+                    expirationDate: subscription.expirationDate,
+                    user: user,
+                    createdAt: subscription.createdAt
+                )
+            }
             
             if let path = user.avatarPath {
                 avatarData = try? await FileManager.get(req: req, with: path)
@@ -150,7 +171,7 @@ struct UserController: RouteCollection {
                 myOffers: [Offer.Output](),
                 offers: [Offer.Output](),
                 chatRooms: [ChatRoom.Output](),
-                isPremiumUser: user.isPremiumUser
+                subscription: subscriptionOutput
             ))
         }
         
@@ -168,6 +189,17 @@ struct UserController: RouteCollection {
         for user in users {
             var avatarData: Data?
             var documentData: Data?
+            var subscriptionOutput: Subscription.Output?
+            
+            if let subscription = try? await user.$subscrtiption.get(on: req.db) {
+                subscriptionOutput = .init(
+                    id: subscription.id,
+                    localizedNames: subscription.localizedNames,
+                    expirationDate: subscription.expirationDate,
+                    user: user,
+                    createdAt: subscription.createdAt
+                )
+            }
             
             if let path = user.avatarPath {
                 avatarData = try? await FileManager.get(req: req, with: path)
@@ -189,7 +221,7 @@ struct UserController: RouteCollection {
                 myOffers: [Offer.Output](),
                 offers: [Offer.Output](),
                 chatRooms: [ChatRoom.Output](),
-                isPremiumUser: user.isPremiumUser
+                subscription: subscriptionOutput
             ))
         }
         
@@ -207,6 +239,17 @@ struct UserController: RouteCollection {
         for user in users {
             var avatarData: Data?
             var documentData: Data?
+            var subscriptionOutput: Subscription.Output?
+            
+            if let subscription = try? await user.$subscrtiption.get(on: req.db) {
+                subscriptionOutput = .init(
+                    id: subscription.id,
+                    localizedNames: subscription.localizedNames,
+                    expirationDate: subscription.expirationDate,
+                    user: user,
+                    createdAt: subscription.createdAt
+                )
+            }
             
             if let path = user.avatarPath {
                 avatarData = try? await FileManager.get(req: req, with: path)
@@ -228,7 +271,7 @@ struct UserController: RouteCollection {
                 myOffers: [Offer.Output](),
                 offers: [Offer.Output](),
                 chatRooms: [ChatRoom.Output](),
-                isPremiumUser: user.isPremiumUser
+                subscription: subscriptionOutput
             ))
         }
         
@@ -241,6 +284,7 @@ struct UserController: RouteCollection {
         }
         
         let user = try req.auth.require(User.self)
+        var someUserSubscriptionOutput: Subscription.Output?
         var avatarData: Data?
         var documentData: Data?
         var deals = [Deal.Output]()
@@ -248,6 +292,16 @@ struct UserController: RouteCollection {
         var ads = [Ad.Output]()
         var myOffers = [Offer.Output]()
         var offers = [Offer.Output]()
+        
+        if let someUserSubscription = try await someUser.$subscrtiption.get(on: req.db) {
+            someUserSubscriptionOutput = .init(
+                id: someUserSubscription.id,
+                localizedNames: someUserSubscription.localizedNames,
+                expirationDate: someUserSubscription.expirationDate,
+                user: someUser,
+                createdAt: someUserSubscription.createdAt
+            )
+        }
         
         if let path = someUser.avatarPath {
             avatarData = try? await FileManager.get(req: req, with: path)
@@ -259,7 +313,7 @@ struct UserController: RouteCollection {
         
         for deal in try await someUser.$deals.get(on: req.db) {
             var photoDatas = [Data]()
-            
+
             for photoPath in deal.photoPaths {
                 if let data = try? await FileManager.get(req: req, with: photoPath) {
                     photoDatas.append(data)
@@ -303,7 +357,7 @@ struct UserController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    isPremiumUser: someUser.isPremiumUser
+                    subscription: someUserSubscriptionOutput
                 ),
                 country: deal.country,
                 city: deal.city,
@@ -365,7 +419,7 @@ struct UserController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    isPremiumUser: someUser.isPremiumUser
+                    subscription: someUserSubscriptionOutput
                 ),
                 country: deal.country,
                 city: deal.city,
@@ -396,7 +450,7 @@ struct UserController: RouteCollection {
                         myOffers: [Offer.Output](),
                         offers: [Offer.Output](),
                         chatRooms: [ChatRoom.Output](),
-                        isPremiumUser: someUser.isPremiumUser
+                        subscription: someUserSubscriptionOutput
                     )
                 ))
             }
@@ -405,8 +459,19 @@ struct UserController: RouteCollection {
         for myOffer in try await someUser.$myOffers.get(on: req.db) {
             let deal = try await myOffer.$deal.get(on: req.db)
             let buyer = try await myOffer.$buyer.get(on: req.db)
+            var subscriptionOutput: Subscription.Output?
             var dealPhotoData: Data?
             var buyerAvatarData: Data?
+            
+            if let subscription = try? await buyer.$subscrtiption.get(on: req.db) {
+                subscriptionOutput = .init(
+                    id: subscription.id,
+                    localizedNames: subscription.localizedNames,
+                    expirationDate: subscription.expirationDate,
+                    user: buyer,
+                    createdAt: subscription.createdAt
+                )
+            }
             
             if let path = buyer.avatarPath {
                 dealPhotoData = try? await FileManager.get(req: req, with: path)
@@ -431,7 +496,7 @@ struct UserController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    isPremiumUser: buyer.isPremiumUser
+                    subscription: subscriptionOutput
                 ),
                 deal: Deal.Output(
                     title: deal.title,
@@ -465,8 +530,7 @@ struct UserController: RouteCollection {
                         ads: [Ad.Output](),
                         myOffers: [Offer.Output](),
                         offers: [Offer.Output](),
-                        chatRooms: [ChatRoom.Output](),
-                        isPremiumUser: user.isPremiumUser
+                        chatRooms: [ChatRoom.Output]()
                     ),
                     offers: [Offer.Output]()
                 ),
@@ -477,8 +541,7 @@ struct UserController: RouteCollection {
                     ads: [Ad.Output](),
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
-                    chatRooms: [ChatRoom.Output](),
-                    isPremiumUser: user.isPremiumUser
+                    chatRooms: [ChatRoom.Output]()
                 )
             ))
         }
@@ -486,8 +549,19 @@ struct UserController: RouteCollection {
         for offer in try await someUser.$offers.get(on: req.db) {
             let deal = try await offer.$deal.get(on: req.db)
             let buyer = try await offer.$buyer.get(on: req.db)
+            var buyerSubscriptionOutput: Subscription.Output?
             var dealPhotoData: Data?
             var buyerAvatarData: Data?
+            
+            if let buyerSubscription = try? await buyer.$subscrtiption.get(on: req.db) {
+                buyerSubscriptionOutput = .init(
+                    id: buyerSubscription.id,
+                    localizedNames: buyerSubscription.localizedNames,
+                    expirationDate: buyerSubscription.expirationDate,
+                    user: buyerSubscription.user,
+                    createdAt: buyerSubscription.createdAt
+                )
+            }
             
             if let path = buyer.avatarPath {
                 dealPhotoData = try? await FileManager.get(req: req, with: path)
@@ -512,7 +586,7 @@ struct UserController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    isPremiumUser: buyer.isPremiumUser
+                    subscription: buyerSubscriptionOutput
                 ),
                 deal: Deal.Output(
                     title: deal.title,
@@ -546,8 +620,7 @@ struct UserController: RouteCollection {
                         ads: [Ad.Output](),
                         myOffers: [Offer.Output](),
                         offers: [Offer.Output](),
-                        chatRooms: [ChatRoom.Output](),
-                        isPremiumUser: user.isPremiumUser
+                        chatRooms: [ChatRoom.Output]()
                     ),
                     offers: [Offer.Output]()
                 ),
@@ -558,8 +631,7 @@ struct UserController: RouteCollection {
                     ads: [Ad.Output](),
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
-                    chatRooms: [ChatRoom.Output](),
-                    isPremiumUser: user.isPremiumUser
+                    chatRooms: [ChatRoom.Output]()
                 )
             ))
         }
@@ -576,13 +648,13 @@ struct UserController: RouteCollection {
             myOffers: myOffers,
             offers: offers,
             chatRooms: [ChatRoom.Output](),
-            isPremiumUser: someUser.isPremiumUser
+            subscription: someUserSubscriptionOutput
         )
     }
     
     private func user(req: Request) async throws -> User.Output {
         let user = try req.auth.require(User.self)
-        
+        var subscriptionOutput: Subscription.Output?
         var avatarData: Data?
         var documentData: Data?
         var deals = [Deal.Output]()
@@ -591,6 +663,16 @@ struct UserController: RouteCollection {
         var myOffers = [Offer.Output]()
         var offers = [Offer.Output]()
         var chatRooms = [ChatRoom.Output]()
+        
+        if let subscription = try? await user.$subscrtiption.get(on: req.db) {
+            subscriptionOutput = .init(
+                id: subscription.id,
+                localizedNames: subscription.localizedNames,
+                expirationDate: subscription.expirationDate,
+                user: user,
+                createdAt: subscription.createdAt
+            )
+        }
         
         if let path = user.avatarPath {
             avatarData = try? await FileManager.get(req: req, with: path)
@@ -646,7 +728,7 @@ struct UserController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    isPremiumUser: user.isPremiumUser
+                    subscription: subscriptionOutput
                 ),
                 country: deal.country,
                 city: deal.city,
@@ -708,7 +790,7 @@ struct UserController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    isPremiumUser: user.isPremiumUser
+                    subscription: subscriptionOutput
                 ),
                 country: deal.country,
                 city: deal.city,
@@ -739,7 +821,7 @@ struct UserController: RouteCollection {
                         myOffers: [Offer.Output](),
                         offers: [Offer.Output](),
                         chatRooms: [ChatRoom.Output](),
-                        isPremiumUser: user.isPremiumUser
+                        subscription: subscriptionOutput
                     )
                 ))
             }
@@ -748,8 +830,19 @@ struct UserController: RouteCollection {
         for myOffer in try await user.$myOffers.get(on: req.db) {
             let deal = try await myOffer.$deal.get(on: req.db)
             let buyer = try await myOffer.$buyer.get(on: req.db)
+            var buyerSubscriptionOutput: Subscription.Output?
             var dealPhotoData: Data?
             var buyerAvatarData: Data?
+            
+            if let buyerSubscription = try? await buyer.$subscrtiption.get(on: req.db) {
+                buyerSubscriptionOutput = .init(
+                    id: buyerSubscription.id,
+                    localizedNames: buyerSubscription.localizedNames,
+                    expirationDate: buyerSubscription.expirationDate,
+                    user: buyer,
+                    createdAt: buyerSubscription.createdAt
+                )
+            }
             
             if let path = buyer.avatarPath {
                 dealPhotoData = try? await FileManager.get(req: req, with: path)
@@ -774,7 +867,7 @@ struct UserController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    isPremiumUser: buyer.isPremiumUser
+                    subscription: buyerSubscriptionOutput
                 ),
                 deal: Deal.Output(
                     title: deal.title,
@@ -808,8 +901,7 @@ struct UserController: RouteCollection {
                         ads: [Ad.Output](),
                         myOffers: [Offer.Output](),
                         offers: [Offer.Output](),
-                        chatRooms: [ChatRoom.Output](),
-                        isPremiumUser: user.isPremiumUser
+                        chatRooms: [ChatRoom.Output]()
                     ),
                     offers: [Offer.Output]()
                 ),
@@ -820,8 +912,7 @@ struct UserController: RouteCollection {
                     ads: [Ad.Output](),
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
-                    chatRooms: [ChatRoom.Output](),
-                    isPremiumUser: user.isPremiumUser
+                    chatRooms: [ChatRoom.Output]()
                 )
             ))
         }
@@ -829,8 +920,19 @@ struct UserController: RouteCollection {
         for offer in try await user.$offers.get(on: req.db) {
             let deal = try await offer.$deal.get(on: req.db)
             let buyer = try await offer.$buyer.get(on: req.db)
+            var buyerSubscriptionOutput: Subscription.Output?
             var dealPhotoData: Data?
             var buyerAvatarData: Data?
+            
+            if let buyerSubscription = try? await buyer.$subscrtiption.get(on: req.db) {
+                buyerSubscriptionOutput = .init(
+                    id: buyerSubscription.id,
+                    localizedNames: buyerSubscription.localizedNames,
+                    expirationDate: buyerSubscription.expirationDate,
+                    user: buyer,
+                    createdAt: buyerSubscription.createdAt
+                )
+            }
             
             if let path = buyer.avatarPath {
                 dealPhotoData = try? await FileManager.get(req: req, with: path)
@@ -855,7 +957,7 @@ struct UserController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    isPremiumUser: buyer.isPremiumUser
+                    subscription: buyerSubscriptionOutput
                 ),
                 deal: Deal.Output(
                     title: deal.title,
@@ -889,8 +991,7 @@ struct UserController: RouteCollection {
                         ads: [Ad.Output](),
                         myOffers: [Offer.Output](),
                         offers: [Offer.Output](),
-                        chatRooms: [ChatRoom.Output](),
-                        isPremiumUser: user.isPremiumUser
+                        chatRooms: [ChatRoom.Output]()
                     ),
                     offers: [Offer.Output]()
                 ),
@@ -901,8 +1002,7 @@ struct UserController: RouteCollection {
                     ads: [Ad.Output](),
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
-                    chatRooms: [ChatRoom.Output](),
-                    isPremiumUser: user.isPremiumUser
+                    chatRooms: [ChatRoom.Output]()
                 )
             ))
         }
@@ -913,7 +1013,8 @@ struct UserController: RouteCollection {
             
             if let chatRoom = try? await ChatRoom.find(chatRoomID, on: req.db) {
                 for message in (try? await chatRoom.$messages.get(on: req.db)) ?? [Message]() {
-                    if let messageUser = try? await message.$user.get(on: req.db) {
+                    if let messageUser = try? await message.$user.get(on: req.db),
+                       let messageUserSubscription = try? await messageUser.$subscrtiption.get(on: req.db) {
                         var bodyData: Data?
                         
                         if let path = message.bodyPath {
@@ -934,7 +1035,13 @@ struct UserController: RouteCollection {
                                 myOffers: [Offer.Output](),
                                 offers: [Offer.Output](),
                                 chatRooms: [ChatRoom.Output](),
-                                isPremiumUser: messageUser.isPremiumUser
+                                subscription: .init(
+                                    id: messageUserSubscription.id,
+                                    localizedNames: messageUserSubscription.localizedNames,
+                                    expirationDate: messageUserSubscription.expirationDate,
+                                    user: messageUserSubscription.user,
+                                    createdAt: messageUserSubscription.createdAt
+                                )
                             ),
                             createdAt: message.$createdAt.timestamp,
                             chatRoom: ChatRoom.Output(users: [User.Output](), messages: [Message.Output]())
@@ -943,7 +1050,8 @@ struct UserController: RouteCollection {
                 }
                 
                 for userID in chatRoom.usersID {
-                    if let chatUser = try? await User.find(userID, on: req.db) {
+                    if let chatUser = try? await User.find(userID, on: req.db),
+                       let chatUserSubscription = try? await user.$subscrtiption.get(on: req.db){
                         var avatarData: Data?
                         
                         if let path = chatUser.avatarPath {
@@ -960,7 +1068,13 @@ struct UserController: RouteCollection {
                             myOffers: [Offer.Output](),
                             offers: [Offer.Output](),
                             chatRooms: [ChatRoom.Output](),
-                            isPremiumUser: chatUser.isPremiumUser
+                            subscription: .init(
+                                id: chatUserSubscription.id,
+                                localizedNames: chatUserSubscription.localizedNames,
+                                expirationDate: chatUserSubscription.expirationDate,
+                                user: chatUserSubscription.user,
+                                createdAt: chatUserSubscription.createdAt
+                            )
                         ))
                     }
                 }
@@ -985,7 +1099,7 @@ struct UserController: RouteCollection {
             myOffers: myOffers,
             offers: offers,
             chatRooms: chatRooms,
-            isPremiumUser: user.isPremiumUser
+            subscription: subscriptionOutput
         )
     }
     
@@ -1013,97 +1127,12 @@ struct UserController: RouteCollection {
         try await self.user(req: req).chatRooms
     }
     
-    private func makeUserPremium(req: Request) async throws -> HTTPStatus {
-        let user = try req.auth.require(User.self)
-        let productID = try req.content.decode(Subscription.self).productID
-        let block: @Sendable (Timer) -> Void = { timer in
-            req.redirect(to: "/users/not/premium").encodeResponse(for: req).whenFailure { print("❌ Error: \($0.localizedDescription)") }
+    private func subscription(req: Request) async throws -> Subscription.Output {
+        guard let sub = try await self.user(req: req).subscription else {
+            throw Abort(.notFound)
         }
         
-        user.isPremiumUser = true
-        
-        try await user.save(on: req.db)
-        
-        for deal in try await user.$deals.get(on: req.db) {
-            deal.isPremiumDeal = true
-            
-            try await deal.save(on: req.db)
-        }
-        
-        switch productID {
-        case .premiumSubscriptionOneMonth:
-            RunLoop.main.add(
-                Timer(
-                    timeInterval: Calendar.current.nextDate(
-                        after: .init(),
-                        matching: .init(month: 1),
-                        matchingPolicy: .previousTimePreservingSmallerComponents
-                    )?.timeIntervalSinceNow ?? .init(),
-                    repeats: false,
-                    block: block
-                ),
-                forMode: .common
-            )
-        case .premiumSubscriptionThreeMonth:
-            RunLoop.main.add(
-                Timer(
-                    timeInterval: Calendar.current.nextDate(
-                        after: .init(),
-                        matching: .init(month: 3),
-                        matchingPolicy: .previousTimePreservingSmallerComponents
-                    )?.timeIntervalSinceNow ?? .init(),
-                    repeats: false,
-                    block: block
-                ),
-                forMode: .common
-            )
-        case .premiumSubscriptionSixMonth:
-            RunLoop.main.add(
-                Timer(
-                    timeInterval: Calendar.current.nextDate(
-                        after: .init(),
-                        matching: .init(month: 6),
-                        matchingPolicy: .previousTimePreservingSmallerComponents
-                    )?.timeIntervalSinceNow ?? .init(),
-                    repeats: false,
-                    block: block
-                ),
-                forMode: .common
-            )
-        case .premiumSubscriptionOneYear:
-            RunLoop.main.add(
-                Timer(
-                    timeInterval: Calendar.current.nextDate(
-                        after: .init(),
-                        matching: .init(year: 1),
-                        matchingPolicy: .previousTimePreservingSmallerComponents
-                    )?.timeIntervalSinceNow ?? .init(),
-                    repeats: false,
-                    block: block
-                ),
-                forMode: .common
-            )
-        default:
-            break
-        }
-        
-        return .ok
-    }
-    
-    private func makeUserNotPremium(req: Request) async throws -> HTTPStatus {
-        let user = try req.auth.require(User.self)
-        
-        user.isPremiumUser = false
-        
-        try await user.save(on: req.db)
-        
-        for deal in try await user.$deals.get(on: req.db) {
-            deal.isPremiumDeal = false
-            
-            try await deal.save(on: req.db)
-        }
-        
-        return .ok
+        return sub
     }
     
     private func create(req: Request) async throws -> HTTPStatus {

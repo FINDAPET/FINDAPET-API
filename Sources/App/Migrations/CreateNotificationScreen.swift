@@ -21,6 +21,7 @@ struct CreateNotificationScreen: AsyncMigration {
             .field("text_color_hex", .string, .required)
             .field("button_title_color_hex", .string, .required)
             .field("button_color_hex", .string, .required)
+            .field("is_required", .bool)
             .create()
     }
     

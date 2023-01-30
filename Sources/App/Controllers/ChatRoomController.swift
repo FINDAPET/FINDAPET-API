@@ -43,7 +43,8 @@ struct ChatRoomController: RouteCollection {
             
             if let chatRoom = try? await ChatRoom.find(chatRoomID, on: req.db) {
                 for message in (try? await chatRoom.$messages.get(on: req.db)) ?? [Message]() {
-                    if let messageUser = try? await message.$user.get(on: req.db) {
+                    if let messageUser = try? await message.$user.get(on: req.db),
+                       let subscription = try? await messageUser.$subscrtiption.get(on: req.db) {
                         messages.append(Message.Output(
                             id: message.id,
                             text: message.text,
@@ -57,7 +58,13 @@ struct ChatRoomController: RouteCollection {
                                 myOffers: [Offer.Output](),
                                 offers: [Offer.Output](),
                                 chatRooms: [ChatRoom.Output](),
-                                isPremiumUser: messageUser.isPremiumUser
+                                subscription: .init(
+                                    id: subscription.id,
+                                    localizedNames: subscription.localizedNames,
+                                    expirationDate: subscription.expirationDate,
+                                    user: messageUser,
+                                    createdAt: subscription.createdAt
+                                )
                             ),
                             createdAt: message.$createdAt.timestamp,
                             chatRoom: ChatRoom.Output(users: [User.Output](), messages: [Message.Output]())
@@ -66,7 +73,8 @@ struct ChatRoomController: RouteCollection {
                 }
                 
                 for userID in chatRoom.usersID {
-                    if let chatUser = try? await User.find(userID, on: req.db) {
+                    if let chatUser = try? await User.find(userID, on: req.db),
+                       let subscription = try? await chatUser.$subscrtiption.get(on: req.db) {
                         var avatarData: Data?
                         
                         if let path = chatUser.avatarPath {
@@ -83,7 +91,13 @@ struct ChatRoomController: RouteCollection {
                             myOffers: [Offer.Output](),
                             offers: [Offer.Output](),
                             chatRooms: [ChatRoom.Output](),
-                            isPremiumUser: chatUser.isPremiumUser
+                            subscription: .init(
+                                id: subscription.id,
+                                localizedNames: subscription.localizedNames,
+                                expirationDate: subscription.expirationDate,
+                                user: subscription.user,
+                                createdAt: subscription.createdAt
+                            )
                         ))
                     }
                 }
@@ -113,7 +127,8 @@ struct ChatRoomController: RouteCollection {
         }
         
         for message in (try? await chatRoom.$messages.get(on: req.db)) ?? [Message]() {
-            if let messageUser = try? await message.$user.get(on: req.db) {
+            if let messageUser = try? await message.$user.get(on: req.db),
+               let subscription = try? await messageUser.$subscrtiption.get(on: req.db) {
                 messages.append(Message.Output(
                     id: message.id,
                     text: message.text,
@@ -127,7 +142,13 @@ struct ChatRoomController: RouteCollection {
                         myOffers: [Offer.Output](),
                         offers: [Offer.Output](),
                         chatRooms: [ChatRoom.Output](),
-                        isPremiumUser: messageUser.isPremiumUser
+                        subscription: .init(
+                            id: subscription.id,
+                            localizedNames: subscription.localizedNames,
+                            expirationDate: subscription.expirationDate,
+                            user: subscription.user,
+                            createdAt: subscription.createdAt
+                        )
                     ),
                     createdAt: message.$createdAt.timestamp,
                     chatRoom: ChatRoom.Output(users: [User.Output](), messages: [Message.Output]())
@@ -136,7 +157,8 @@ struct ChatRoomController: RouteCollection {
         }
         
         for userID in chatRoom.usersID {
-            if let chatUser = try? await User.find(userID, on: req.db) {
+            if let chatUser = try? await User.find(userID, on: req.db),
+               let subscription = try? await chatUser.$subscrtiption.get(on: req.db) {
                 var avatarData: Data?
                 
                 if let path = chatUser.avatarPath {
@@ -153,7 +175,13 @@ struct ChatRoomController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    isPremiumUser: chatUser.isPremiumUser
+                    subscription: .init(
+                        id: subscription.id,
+                        localizedNames: subscription.localizedNames,
+                        expirationDate: subscription.expirationDate,
+                        user: subscription.user,
+                        createdAt: subscription.createdAt
+                    )
                 ))
             }
         }
@@ -183,7 +211,8 @@ struct ChatRoomController: RouteCollection {
         }
         
         for message in (try? await chatRoom.$messages.get(on: req.db)) ?? [Message]() {
-            if let messageUser = try? await message.$user.get(on: req.db) {
+            if let messageUser = try? await message.$user.get(on: req.db),
+               let subscription = try? await messageUser.$subscrtiption.get(on: req.db) {
                 messages.append(Message.Output(
                     id: message.id,
                     text: message.text,
@@ -197,7 +226,13 @@ struct ChatRoomController: RouteCollection {
                         myOffers: [Offer.Output](),
                         offers: [Offer.Output](),
                         chatRooms: [ChatRoom.Output](),
-                        isPremiumUser: messageUser.isPremiumUser
+                        subscription: .init(
+                            id: subscription.id,
+                            localizedNames: subscription.localizedNames,
+                            expirationDate: subscription.expirationDate,
+                            user: subscription.user,
+                            createdAt: subscription.createdAt
+                        )
                     ),
                     createdAt: message.$createdAt.timestamp,
                     chatRoom: ChatRoom.Output(users: [User.Output](), messages: [Message.Output]())
@@ -206,7 +241,8 @@ struct ChatRoomController: RouteCollection {
         }
         
         for userID in chatRoom.usersID {
-            if let chatUser = try? await User.find(userID, on: req.db) {
+            if let chatUser = try? await User.find(userID, on: req.db),
+               let subscription = try? await chatUser.$subscrtiption.get(on: req.db) {
                 var avatarData: Data?
                 
                 if let path = chatUser.avatarPath {
@@ -223,7 +259,13 @@ struct ChatRoomController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    isPremiumUser: chatUser.isPremiumUser
+                    subscription: .init(
+                        id: subscription.id,
+                        localizedNames: subscription.localizedNames,
+                        expirationDate: subscription.expirationDate,
+                        user: subscription.user,
+                        createdAt: subscription.createdAt
+                    )
                 ))
             }
         }

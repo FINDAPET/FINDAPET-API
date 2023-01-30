@@ -40,11 +40,11 @@ final class User: Model, Content {
     @Field(key: "chat_rooms_id")
     var chatRoomsID: [ChatRoom.IDValue]
     
-    @Field(key: "is_premium_user")
-    var isPremiumUser: Bool
-    
     @Field(key: "basic_currency_name")
     var basicCurrencyName: String
+    
+    @OptionalChild(for: \.$user)
+    var subscrtiption: Subscription?
     
     @OptionalField(key: "country_code")
     var countryCode: String?
@@ -78,7 +78,7 @@ final class User: Model, Content {
     
     init() { }
     
-    init(id: UUID? = nil, email: String, passwordHash: String, name: String = "", isActiveCattery: Bool = false, avatarPath: String? = nil, documentPath: String? = nil, description: String? = nil, chatsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), isCatteryWaitVerify: Bool = false, isAdmin: Bool = false, deviceToken: String? = nil, chatRoomsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), countryCode: String? = nil, isPremiumUser: Bool = false, basicCurrencyName: String = "USD") {
+    init(id: UUID? = nil, email: String, passwordHash: String, name: String = "", isActiveCattery: Bool = false, avatarPath: String? = nil, documentPath: String? = nil, description: String? = nil, chatsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), isCatteryWaitVerify: Bool = false, isAdmin: Bool = false, subscriptionID: Subscription.IDValue? = nil, deviceToken: String? = nil, chatRoomsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), countryCode: String? = nil, basicCurrencyName: String = "USD") {
         self.id = id
         self.email = email
         self.passwordHash = passwordHash
@@ -93,7 +93,6 @@ final class User: Model, Content {
         self.deviceToken = deviceToken
         self.chatRoomsID = chatRoomsID
         self.countryCode = countryCode
-        self.isPremiumUser = isPremiumUser
         self.basicCurrencyName = basicCurrencyName
     }
     
@@ -171,7 +170,7 @@ extension User {
         var myOffers: [Offer.Output]
         var offers: [Offer.Output]
         var chatRooms: [ChatRoom.Output]
-        var isPremiumUser: Bool
+        var subscription: Subscription.Output?
     }
 }
 

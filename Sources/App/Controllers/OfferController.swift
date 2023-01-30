@@ -50,6 +50,28 @@ struct OfferController: RouteCollection {
             
             let petType = try await deal.$petType.get(on: req.db)
             let petBreed = try await deal.$petBreed.get(on: req.db)
+            var buyerSubscriptionOutput: Subscription.Output?
+            var catterySubscriptionOutput: Subscription.Output?
+            
+            if let buyerSubscription = try? await buyer.$subscrtiption.get(on: req.db) {
+                buyerSubscriptionOutput = .init(
+                    id: buyerSubscription.id,
+                    localizedNames: buyerSubscription.localizedNames,
+                    expirationDate: buyerSubscription.expirationDate,
+                    user: buyer,
+                    createdAt: buyerSubscription.createdAt
+                )
+            }
+            
+            if let catterySubscription = try? await cattery.$subscrtiption.get(on: req.db) {
+                catterySubscriptionOutput = .init(
+                    id: catterySubscription.id,
+                    localizedNames: catterySubscription.localizedNames,
+                    expirationDate: catterySubscription.expirationDate,
+                    user: cattery,
+                    createdAt: catterySubscription.createdAt
+                )
+            }
             
             offersOutput.append(Offer.Output(
                 id: offer.id,
@@ -67,7 +89,7 @@ struct OfferController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    isPremiumUser: buyer.isPremiumUser
+                    subscription: buyerSubscriptionOutput
                 ),
                 deal: Deal.Output(
                     id: deal.id,
@@ -102,8 +124,7 @@ struct OfferController: RouteCollection {
                         ads: [Ad.Output](),
                         myOffers: [Offer.Output](),
                         offers: [Offer.Output](),
-                        chatRooms: [ChatRoom.Output](),
-                        isPremiumUser: user.isPremiumUser
+                        chatRooms: [ChatRoom.Output]()
                     ),
                     country: deal.country,
                     city: deal.city,
@@ -129,7 +150,7 @@ struct OfferController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    isPremiumUser: cattery.isPremiumUser
+                    subscription: catterySubscriptionOutput
                 )
             ))
         }
