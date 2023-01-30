@@ -57,8 +57,7 @@ struct MessageController: RouteCollection {
                         ads: [Ad.Output](),
                         myOffers: [Offer.Output](),
                         offers: [Offer.Output](),
-                        chatRooms: [ChatRoom.Output](),
-                        isPremiumUser: messageUser.isPremiumUser
+                        chatRooms: [ChatRoom.Output]()
                     ),
                     createdAt: message.$createdAt.timestamp,
                     chatRoom: ChatRoom.Output(users: [User.Output](), messages: [Message.Output]())
@@ -95,8 +94,7 @@ struct MessageController: RouteCollection {
                 ads: [Ad.Output](),
                 myOffers: [Offer.Output](),
                 offers: [Offer.Output](),
-                chatRooms: [ChatRoom.Output](),
-                isPremiumUser: messageUser.isPremiumUser
+                chatRooms: .init()
             ),
             createdAt: message.$createdAt.timestamp,
             chatRoom: ChatRoom.Output(users: [User.Output](), messages: [Message.Output]())

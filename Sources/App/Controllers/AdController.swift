@@ -57,8 +57,7 @@ struct AdController: RouteCollection {
                     ads: [Ad.Output](),
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
-                    chatRooms: [ChatRoom.Output](),
-                    isPremiumUser: cattery?.isPremiumUser ?? false
+                    chatRooms: [ChatRoom.Output]()
                 )
             ))
         }
@@ -94,8 +93,7 @@ struct AdController: RouteCollection {
                 ads: [Ad.Output](),
                 myOffers: [Offer.Output](),
                 offers: [Offer.Output](),
-                chatRooms: [ChatRoom.Output](),
-                isPremiumUser: cattery?.isPremiumUser ?? false
+                chatRooms: [ChatRoom.Output]()
             )
         )
     }
@@ -132,8 +130,7 @@ struct AdController: RouteCollection {
                     ads: [Ad.Output](),
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
-                    chatRooms: [ChatRoom.Output](),
-                    isPremiumUser: cattery?.isPremiumUser ?? false
+                    chatRooms: [ChatRoom.Output]()
                 )
             ))
         }

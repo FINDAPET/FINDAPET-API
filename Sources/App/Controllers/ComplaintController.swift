@@ -29,7 +29,8 @@ struct ComplaintController: RouteCollection {
         }
         
         for complaint in try await Complaint.query(on: req.db).all() {
-            guard let sender = try? await complaint.$sender.get(on: req.db) else {
+            guard let sender = try? await complaint.$sender.get(on: req.db),
+                  let subscription = try? await sender.$subscrtiption.get(on: req.db) else {
                 continue
             }
             
@@ -41,6 +42,17 @@ struct ComplaintController: RouteCollection {
                 var datas = [Data]()
                 var avatarData: Data?
                 let user = try await deal.$cattery.get(on: req.db)
+                var subscriptionOutput: Subscription.Output?
+                
+                if let subscription = try? await user.$subscrtiption.get(on: req.db) {
+                    subscriptionOutput = .init(
+                        id: subscription.id,
+                        localizedNames: subscription.localizedNames,
+                        expirationDate: subscription.expirationDate,
+                        user: user,
+                        createdAt: subscription.createdAt
+                    )
+                }
                 
                 if let path = deal.photoPaths.first, let data = try? await FileManager.get(req: req, with: path) {
                     datas.append(data)
@@ -85,7 +97,7 @@ struct ComplaintController: RouteCollection {
                         myOffers: .init(),
                         offers: .init(),
                         chatRooms: .init(),
-                        isPremiumUser: user.isPremiumUser
+                        subscription: subscriptionOutput
                     ),
                     country: deal.country,
                     city: deal.city,
@@ -101,7 +113,8 @@ struct ComplaintController: RouteCollection {
                 )
             }
             
-            if let user = try? await complaint.$user.get(on: req.db) {
+            if let user = try? await complaint.$user.get(on: req.db),
+               let subscription = try? await user.$subscrtiption.get(on: req.db) {
                 var avatarData: Data?
                 
                 if let path = user.avatarPath, let data = try? await FileManager.get(req: req, with: path) {
@@ -119,7 +132,13 @@ struct ComplaintController: RouteCollection {
                     myOffers: .init(),
                     offers: .init(),
                     chatRooms: .init(),
-                    isPremiumUser: user.isPremiumUser
+                    subscription: .init(
+                        id: subscription.id,
+                        localizedNames: subscription.localizedNames,
+                        expirationDate: subscription.expirationDate,
+                        user: user,
+                        createdAt: subscription.createdAt
+                    )
                 )
             }
             
@@ -140,7 +159,13 @@ struct ComplaintController: RouteCollection {
                     myOffers: .init(),
                     offers: .init(),
                     chatRooms: .init(),
-                    isPremiumUser: sender.isPremiumUser
+                    subscription: .init(
+                        id: subscription.id,
+                        localizedNames: subscription.localizedNames,
+                        expirationDate: subscription.expirationDate,
+                        user: sender,
+                        createdAt: subscription.createdAt
+                    )
                 ),
                 createdAt: complaint.createdAt,
                 deal: dealOutput,
@@ -157,7 +182,8 @@ struct ComplaintController: RouteCollection {
         }
         
         guard let complaint = try await Complaint.find(req.parameters.get("complaintID"), on: req.db),
-              let sender = try? await complaint.$sender.get(on: req.db) else {
+              let sender = try? await complaint.$sender.get(on: req.db),
+              let subscription = try? await sender.$subscrtiption.get(on: req.db) else {
             throw Abort(.notFound)
         }
         
@@ -169,6 +195,17 @@ struct ComplaintController: RouteCollection {
             var datas = [Data]()
             var avatarData: Data?
             let user = try await deal.$cattery.get(on: req.db)
+            var subscriptionOutput: Subscription.Output?
+            
+            if let subscription = try? await user.$subscrtiption.get(on: req.db) {
+                subscriptionOutput = .init(
+                    id: subscription.id,
+                    localizedNames: subscription.localizedNames,
+                    expirationDate: subscription.expirationDate,
+                    user: user,
+                    createdAt: subscription.createdAt
+                )
+            }
             
             if let path = deal.photoPaths.first, let data = try? await FileManager.get(req: req, with: path) {
                 datas.append(data)
@@ -213,7 +250,7 @@ struct ComplaintController: RouteCollection {
                     myOffers: .init(),
                     offers: .init(),
                     chatRooms: .init(),
-                    isPremiumUser: user.isPremiumUser
+                    subscription: subscriptionOutput
                 ),
                 country: deal.country,
                 city: deal.city,
@@ -229,7 +266,8 @@ struct ComplaintController: RouteCollection {
             )
         }
         
-        if let user = try? await complaint.$user.get(on: req.db) {
+        if let user = try? await complaint.$user.get(on: req.db),
+           let subscription = try? await user.$subscrtiption.get(on: req.db) {
             var avatarData: Data?
             
             if let path = user.avatarPath, let data = try? await FileManager.get(req: req, with: path) {
@@ -247,7 +285,13 @@ struct ComplaintController: RouteCollection {
                 myOffers: .init(),
                 offers: .init(),
                 chatRooms: .init(),
-                isPremiumUser: user.isPremiumUser
+                subscription: .init(
+                    id: subscription.id,
+                    localizedNames: subscription.localizedNames,
+                    expirationDate: subscription.expirationDate,
+                    user: user,
+                    createdAt: subscription.createdAt
+                )
             )
         }
         
@@ -268,7 +312,13 @@ struct ComplaintController: RouteCollection {
                 myOffers: .init(),
                 offers: .init(),
                 chatRooms: .init(),
-                isPremiumUser: sender.isPremiumUser
+                subscription: .init(
+                    id: subscription.id,
+                    localizedNames: subscription.localizedNames,
+                    expirationDate: subscription.expirationDate,
+                    user: sender,
+                    createdAt: subscription.createdAt
+                )
             ),
             createdAt: complaint.createdAt,
             deal: dealOutput,

@@ -40,6 +40,9 @@ final class NotificationScreen: Model, Content {
     @Field(key: "button_color_hex")
     var buttonColorHEX: String
     
+    @Field(key: "is_required")
+    var isRequired: Bool
+    
     init() { }
     
     init(
@@ -51,7 +54,8 @@ final class NotificationScreen: Model, Content {
         buttonTitle: String,
         textColorHEX: String,
         buttonTitleColorHEX: String,
-        buttonColorHEX: String
+        buttonColorHEX: String,
+        isRequired: Bool = false
     ) {
         self.id = id
         self.countryCode = countryCode
@@ -62,6 +66,7 @@ final class NotificationScreen: Model, Content {
         self.textColorHEX = textColorHEX
         self.buttonTitleColorHEX = buttonTitleColorHEX
         self.buttonColorHEX = buttonColorHEX
+        self.isRequired = isRequired
     }
     
 }
@@ -77,6 +82,31 @@ extension NotificationScreen {
         var textColorHEX: String
         var buttonTitleColorHEX: String
         var buttonColorHEX: String
+        var isRequired: Bool
+        
+        init(
+            id: UUID? = nil,
+            countryCode: String,
+            backgroundImageData: Data,
+            title: String,
+            text: String,
+            buttonTitle: String,
+            textColorHEX: String,
+            buttonTitleColorHEX: String,
+            buttonColorHEX: String,
+            isRequired: Bool = false
+        ) {
+            self.id = id
+            self.countryCode = countryCode
+            self.backgroundImageData = backgroundImageData
+            self.title = title
+            self.text = text
+            self.buttonTitle = buttonTitle
+            self.textColorHEX = textColorHEX
+            self.buttonTitleColorHEX = buttonTitleColorHEX
+            self.buttonColorHEX = buttonColorHEX
+            self.isRequired = isRequired
+        }
     }
 }
 
@@ -90,6 +120,7 @@ extension NotificationScreen {
         var textColorHEX: String
         var buttonTitleColorHEX: String
         var buttonColorHEX: String
+        var isRequired: Bool
     }
 }
 
