@@ -23,7 +23,7 @@ final class CreateUser: AsyncMigration {
             .field("description", .string)
             .field("is_cattery_wait_verify", .bool)
             .field("is_admin", .bool)
-            .field("device_token", .string)
+            .field("device_tokens", .array(of: .string))
             .field("country_code", .string)
             .field("chat_rooms_id", .array(of: .uuid))
             .field("is_premium_user", .bool)

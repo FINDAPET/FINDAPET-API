@@ -112,9 +112,10 @@ struct MessageController: RouteCollection {
             throw Abort(.badRequest)
         }
         
-        if let secondUser = try? await User.query(on: req.db).all().filter({ $0.id == chatRoom.usersID.filter { $0 != user.id }.first }).first,
-           let deviceToken = secondUser.deviceToken {
-            try? req.apns.send(.init(title: user.name, subtitle: "Sent you a new message"), to: deviceToken).wait()
+        if let secondUser = try? await User.query(on: req.db).all().filter({ $0.id == chatRoom.usersID.filter { $0 != user.id }.first }).first {
+            for deviceToken in secondUser.deviceTokens {
+                try? req.apns.send(.init(title: user.name, subtitle: "Sent you a new message"), to: deviceToken).wait()
+            }
         }
         
         var bodyPath: String?

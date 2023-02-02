@@ -377,8 +377,9 @@ struct ChatRoomController: RouteCollection {
             try? await message.save(on: req.db)
             
             if ChatRoomWebSocketManager.shared.chatRoomWebSockets.filter({ $0.id == chatRoomID }).first?.users.count ?? 2 < 2 {
-                if let deviceToken = firstUser.deviceToken {
-                    try? req.apns.send(.init(title: firstUser.name, subtitle: "Sent you a new message"), to: deviceToken).wait()
+                for deviceToken in firstUser.deviceTokens {
+                    try? req.apns.send(.init(title: firstUser.name, subtitle: "Sent you a new message"), to: deviceToken)
+                        .wait()
                 }
             } else {
                 for userWebSocket in ChatRoomWebSocketManager.shared.chatRoomWebSockets

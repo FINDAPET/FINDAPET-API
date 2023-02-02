@@ -146,7 +146,8 @@ struct OfferController: RouteCollection {
             throw Abort(.badRequest)
         }
         
-        guard let deviceToken = try await User.find(offerInput.catteryID, on: req.db)?.deviceToken else {
+        guard let deviceTokens = try await User.find(offerInput.catteryID, on: req.db)?.deviceTokens,
+              !deviceTokens.isEmpty else {
             throw Abort(.notFound)
         }
         
@@ -158,7 +159,9 @@ struct OfferController: RouteCollection {
             currencyName: offerInput.currencyName.rawValue
         ).save(on: req.db)
         
-        try? req.apns.send(.init(title: "You have a new offer"), to: deviceToken).wait()
+        for deviceToken in deviceTokens {
+            try? req.apns.send(.init(title: "You have a new offer"), to: deviceToken).wait()
+        }
         
         return .ok
     }

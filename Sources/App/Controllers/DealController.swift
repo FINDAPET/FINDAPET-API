@@ -358,14 +358,17 @@ struct DealController: RouteCollection {
         
         try await deal.save(on: req.db)
         
-        if let deviceToken = buyer.deviceToken {
+        for deviceToken in buyer.deviceTokens {
             try? req.apns.send(.init(title: "You bought a pet"), to: deviceToken).wait()
         }
         
         for deleteOffer in try await deal.$offers.get(on: req.db) {
-            if deleteOffer.id != offer.id, let deviceToken = deleteOffer.buyer.deviceToken {
+            if deleteOffer.id != offer.id {
                 try? await deleteOffer.delete(on: req.db)
-                try? req.apns.send(.init(title: "Your offer is rejected"), to: deviceToken).wait()
+                
+                for deviceToken in deleteOffer.buyer.deviceTokens {
+                    try? req.apns.send(.init(title: "Your offer is rejected"), to: deviceToken).wait()
+                }
             }
         }
         

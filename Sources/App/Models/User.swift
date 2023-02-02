@@ -46,11 +46,11 @@ final class User: Model, Content {
     @Field(key: "basic_currency_name")
     var basicCurrencyName: String
     
+    @Field(key: "device_tokens")
+    var deviceTokens: [String]
+    
     @OptionalField(key: "country_code")
     var countryCode: String?
-    
-    @OptionalField(key: "device_token")
-    var deviceToken: String?
     
     @OptionalField(key: "avatar_path")
     var avatarPath: String?
@@ -78,7 +78,7 @@ final class User: Model, Content {
     
     init() { }
     
-    init(id: UUID? = nil, email: String, passwordHash: String, name: String = "", isActiveCattery: Bool = false, avatarPath: String? = nil, documentPath: String? = nil, description: String? = nil, chatsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), isCatteryWaitVerify: Bool = false, isAdmin: Bool = false, deviceToken: String? = nil, chatRoomsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), countryCode: String? = nil, isPremiumUser: Bool = false, basicCurrencyName: String = "USD") {
+    init(id: UUID? = nil, email: String, passwordHash: String, name: String = "", isActiveCattery: Bool = false, avatarPath: String? = nil, documentPath: String? = nil, description: String? = nil, chatsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), isCatteryWaitVerify: Bool = false, isAdmin: Bool = false, deviceTokens: [String] = .init(), chatRoomsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), countryCode: String? = nil, isPremiumUser: Bool = false, basicCurrencyName: String = "USD") {
         self.id = id
         self.email = email
         self.passwordHash = passwordHash
@@ -90,7 +90,7 @@ final class User: Model, Content {
         self.chatsID = chatsID
         self.isCatteryWaitVerify = isCatteryWaitVerify
         self.isAdmin = isAdmin
-        self.deviceToken = deviceToken
+        self.deviceTokens = deviceTokens
         self.chatRoomsID = chatRoomsID
         self.countryCode = countryCode
         self.isPremiumUser = isPremiumUser
@@ -137,20 +137,20 @@ extension User {
         var avatarData: Data?
         var documentData: Data?
         var description: String?
-        var deviceToken: String?
+        var deviceTokens: [String]
         var isCatteryWaitVerify: Bool
         var chatRoomsID: [ChatRoom.IDValue]
         var countryCode: String?
         var basicCurrencyName: Currency
         
-        init(id: UUID? = nil, name: String = "", avatarData: Data? = nil, documentData: Data? = nil, description: String? = nil, isCatteryWaitVerify: Bool = false, deviceToken: String? = nil, chatRoomsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), countryCode: String? = nil, basicCurrencyName: Currency = .USD) {
+        init(id: UUID? = nil, name: String = "", avatarData: Data? = nil, documentData: Data? = nil, description: String? = nil, isCatteryWaitVerify: Bool = false, deviceTokens: [String] = .init(), chatRoomsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), countryCode: String? = nil, basicCurrencyName: Currency = .USD) {
             self.id = id
             self.name = name
             self.avatarData = avatarData
             self.documentData = documentData
             self.description = description
             self.isCatteryWaitVerify = isCatteryWaitVerify
-            self.deviceToken = deviceToken
+            self.deviceTokens = deviceTokens
             self.chatRoomsID = chatRoomsID
             self.countryCode = countryCode
             self.basicCurrencyName = basicCurrencyName

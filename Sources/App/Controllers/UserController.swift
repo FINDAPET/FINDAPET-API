@@ -94,7 +94,7 @@ struct UserController: RouteCollection {
         
         try await cattery.save(on: req.db)
         
-        if let deviceToken = cattery.deviceToken {
+        for deviceToken in cattery.deviceTokens {
             try req.apns.send(.init(title: "Your cattery is confirmed!"), to: deviceToken).wait()
         }
         
@@ -1156,7 +1156,7 @@ struct UserController: RouteCollection {
         oldUser.name = newUser.name
         oldUser.description = newUser.description
         oldUser.isCatteryWaitVerify = newUser.isCatteryWaitVerify
-        oldUser.deviceToken = newUser.deviceToken
+        oldUser.deviceTokens = newUser.deviceTokens
         oldUser.countryCode = newUser.countryCode
         oldUser.basicCurrencyName = newUser.basicCurrencyName.rawValue
         
