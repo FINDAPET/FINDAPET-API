@@ -7,6 +7,7 @@
 
 import Foundation
 import Vapor
+import Fluent
 
 struct UserTokenController: RouteCollection {
     
@@ -14,30 +15,34 @@ struct UserTokenController: RouteCollection {
         let userProtected = routes.grouped(User.authenticator())
         let userTokenProtected = routes.grouped(UserToken.authenticator())
         
-        userProtected.get("auth", use: self.auth(req:))
+        userProtected.get("auth", ":deviceToken", use: self.auth(req:))
         
-        userTokenProtected.delete("logOut", use: self.logOut(req:))
+        userTokenProtected.delete("logOut", ":deviceToken", use: self.logOut(req:))
     }
     
     private func auth(req: Request) async throws -> UserToken.Output {
+        let id = UUID(uuidString: req.parameters.get("deviceToken") ?? .init())
         let user = try req.auth.require(User.self)
-        let token = try user.generateToken()
+        let token = try user.generateToken(deviceID: id)
         
-        for token in (try? await UserToken.query(on: req.db).all()) ?? [UserToken]() {
-            if (try? await token.$user.get(on: req.db).id) == user.id {
-                try? await token.delete(on: req.db)
+        if let id = id {
+            for token in (try? await UserToken.query(on: req.db).filter(\.$deviceID == id).all()) ?? .init() {
+                try await token.delete(on: req.db)
             }
         }
         
         try await token.save(on: req.db)
         
-        return UserToken.Output(id: token.id, value: token.value, user: user)
+        return .init(id: token.id, value: token.value, user: user)
     }
     
     private func logOut(req: Request) async throws -> HTTPStatus {
-        let user = try req.auth.require(User.self)
-        
-        for token in try await UserToken.query(on: req.db).all().filter({ $0.$user.id == user.id }) {
+        guard let id = UUID(uuidString: req.parameters.get("deviceToken") ?? .init()),
+              let userID = try req.auth.require(User.self).id else {
+            throw Abort(.notFound)
+        }
+                
+        for token in try await UserToken.query(on: req.db).filter(\.$deviceID == id).filter(\.$user.$id == userID).all() {
             try await token.delete(on: req.db)
         }
         

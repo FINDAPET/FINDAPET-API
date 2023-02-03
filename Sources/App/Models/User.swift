@@ -125,8 +125,8 @@ extension User: ModelAuthenticatable {
 }
 
 extension User {
-    func generateToken() throws -> UserToken {
-        return try .init(value: [UInt8].random(count: 16).base64, userID: self.requireID())
+    func generateToken(deviceID: UUID? = nil) throws -> UserToken {
+        return try .init(deviceID: deviceID, value: [UInt8].random(count: 16).base64, userID: self.requireID())
     }
 }
 

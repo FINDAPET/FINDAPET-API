@@ -15,6 +15,7 @@ struct CreateUserToken: AsyncMigration {
             .id()
             .field("value", .string, .required)
             .field("user_id", .uuid, .required)
+            .field("device_id", .uuid)
             .unique(on: "value")
             .create()
     }
