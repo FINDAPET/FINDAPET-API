@@ -67,13 +67,14 @@ struct OfferController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
+                    score: .zero,
                     isPremiumUser: buyer.isPremiumUser
                 ),
                 deal: Deal.Output(
                     id: deal.id,
                     title: deal.title,
                     photoDatas: [dealPhotoData ?? Data()],
-                    tags: deal.tags,
+                    tags: deal.tags.split(separator: "#").map({ String($0) }),
                     isPremiumDeal: deal.isPremiumDeal,
                     isActive: deal.isActive,
                     viewsCount: deal.viewsCount,
@@ -85,16 +86,18 @@ struct OfferController: RouteCollection {
                         petBreeds: try await petType.$petBreeds.get(on: req.db)
                     ),
                     petBreed: .init(id: petBreed.id, name: petBreed.name, petType: petType),
-                    petClass: deal.petClass,
+                    petClass: .get(deal.petClass) ?? .allClass,
                     isMale: deal.isMale,
-                    age: deal.age,
+                    birthDate: deal.birthDate,
                     color: deal.color,
                     price: Double(try await CurrencyConverter.convert(
+                        req,
                         from: deal.currencyName,
                         to: user.basicCurrencyName,
                         amount: deal.price
                     ).result),
                     currencyName: user.basicCurrencyName,
+                    score: deal.score,
                     cattery: User.Output(
                         name: String(),
                         deals: [Deal.Output](),
@@ -103,17 +106,12 @@ struct OfferController: RouteCollection {
                         myOffers: [Offer.Output](),
                         offers: [Offer.Output](),
                         chatRooms: [ChatRoom.Output](),
+                        score: .zero,
                         isPremiumUser: user.isPremiumUser
                     ),
                     country: deal.country,
                     city: deal.city,
                     description: deal.description,
-                    whatsappNumber: deal.whatsappNumber,
-                    telegramUsername: deal.telegramUsername,
-                    instagramUsername: deal.instagramUsername,
-                    facebookUsername: deal.facebookUsername,
-                    vkUsername: deal.vkUsername,
-                    mail: deal.mail,
                     buyer: nil,
                     offers: [Offer.Output]()
                 ),
@@ -129,6 +127,7 @@ struct OfferController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
+                    score: .zero,
                     isPremiumUser: cattery.isPremiumUser
                 )
             ))
@@ -160,7 +159,7 @@ struct OfferController: RouteCollection {
         ).save(on: req.db)
         
         for deviceToken in deviceTokens {
-            try? req.apns.send(.init(title: "You have a new offer"), to: deviceToken).wait()
+            _ = req.apns.send(.init(title: "You have a new offer"), to: deviceToken)
         }
         
         return .ok

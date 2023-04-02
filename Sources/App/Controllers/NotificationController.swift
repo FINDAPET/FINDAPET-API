@@ -28,14 +28,14 @@ struct NotificationController: RouteCollection {
             for countryCode in notification.coutryCodes {
                 for user in try await User.query(on: req.db).all().filter({ $0.countryCode == countryCode }) {
                     for deviceToken in user.deviceTokens {
-                        try? req.apns.send(.init(title: notification.title), to: deviceToken).wait()
+                        _ = req.apns.send(.init(title: notification.title), to: deviceToken)
                     }
                 }
             }
         } else {
             for user in try await User.query(on: req.db).all() {
                 for deviceToken in user.deviceTokens {
-                    try? req.apns.send(.init(title: notification.title), to: deviceToken).wait()
+                    _ = req.apns.send(.init(title: notification.title), to: deviceToken)
                 }
             }
         }
@@ -52,7 +52,7 @@ struct NotificationController: RouteCollection {
         
         for userID in notification.usersID {
             for deviceToken in (try? await User.find(userID, on: req.db)?.deviceTokens) ?? .init() {
-                try? req.apns.send(.init(title: notification.title), to: deviceToken).wait()
+                _ = req.apns.send(.init(title: notification.title), to: deviceToken)
             }
         }
         

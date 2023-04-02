@@ -9,6 +9,7 @@ import Foundation
 import Vapor
 import APNS
 import FluentKit
+import PostgresNIO
 
 struct DealController: RouteCollection {
     
@@ -36,32 +37,14 @@ struct DealController: RouteCollection {
         
         self.filterDeals(deals: &query, filter: filter)
         
-        var deals = try await query.range(..<10).all()
-        
-        if let title = filter?.title {
-            let titleWords = title.split(separator: " ")
-            
-            deals = deals.filter { deal in
-                let words = deal.title.split(separator: " ")
-                var count = 0
-                
-                for titleWord in titleWords {
-                    if words.contains(titleWord) || deal.tags.contains(String(titleWord)) { count += 1 }
-                    if count >= 3 { break }
-                }
-                
-                if count < 3 {
-                    return false
-                }
-                
-                return true
-            }
-        }
+        var deals = !user.isAdmin ?
+        try await query.filter(\.$isActive == true).sort(\.$score, .descending).range(..<10).all() :
+        try await query.sort(\.$score, .descending).range(..<10).all()
         
         if !user.isAdmin {
             deals = deals.filter { $0.buyer == nil }
         }
-                
+        
         for deal in deals {
             var photoDatas = [Data]()
             
@@ -73,12 +56,63 @@ struct DealController: RouteCollection {
             
             let petType = try await deal.$petType.get(on: req.db)
             let petBreed = try await deal.$petBreed.get(on: req.db)
+            let dealUser = try await deal.$cattery.get(on: req.db)
+            var userDeals = [Deal.Output]()
+            var dealUserAvatarData: Data?
+            
+            if let path = dealUser.avatarPath {
+                dealUserAvatarData = try? await FileManager.get(req: req, with: path)
+            }
+            
+            for deal in (try? await dealUser.$deals.get(on: req.db)) ?? .init() {
+                userDeals.append(.init(
+                    title: deal.title,
+                    photoDatas: .init(),
+                    tags: .init(),
+                    isPremiumDeal: deal.isPremiumDeal,
+                    isActive: deal.isActive,
+                    viewsCount: deal.viewsCount,
+                    mode: deal.mode,
+                    petType: .init(localizedNames: .init(), imageData: .init(), petBreeds: .init()),
+                    petBreed: .init(name: .init(), petType: .init(localizedNames: .init(), imagePath: .init())),
+                    petClass: .allClass,
+                    isMale: deal.isMale,
+                    birthDate: deal.birthDate,
+                    color: deal.color,
+                    price: deal.price,
+                    currencyName: deal.currencyName,
+                    score: deal.score,
+                    cattery: .init(
+                        name: .init(),
+                        deals: .init(),
+                        boughtDeals: .init(),
+                        ads: .init(),
+                        myOffers: .init(),
+                        offers: .init(),
+                        chatRooms: .init(),
+                        score: .zero,
+                        isPremiumUser: .random()
+                    ),
+                    buyer: deal.buyer != nil ? .init(
+                        name: .init(),
+                        deals: .init(),
+                        boughtDeals: .init(),
+                        ads: .init(),
+                        myOffers: .init(),
+                        offers: .init(),
+                        chatRooms: .init(),
+                        score: .zero,
+                        isPremiumUser: .random()
+                    ) : nil,
+                    offers: .init()
+                ))
+            }
             
             dealsOutput.append(Deal.Output(
                 id: deal.id,
                 title: deal.title,
                 photoDatas: photoDatas,
-                tags: deal.tags,
+                tags: deal.tags.split(separator: "#").map({ String($0) }),
                 isPremiumDeal: deal.isPremiumDeal,
                 isActive: deal.isActive,
                 viewsCount: deal.viewsCount,
@@ -90,41 +124,40 @@ struct DealController: RouteCollection {
                     petBreeds: try await petType.$petBreeds.get(on: req.db)
                 ),
                 petBreed: .init(id: petBreed.id, name: petBreed.name, petType: petType),
-                petClass: deal.petClass,
+                petClass: .get(deal.petClass) ?? .allClass,
                 isMale: deal.isMale,
-                age: deal.age,
+                birthDate: deal.birthDate,
                 color: deal.color,
-                price: Double(try await CurrencyConverter.convert(
+                price: .init(try await CurrencyConverter.convert(
+                    req,
                     from: deal.currencyName,
                     to: user.basicCurrencyName,
                     amount: deal.price
                 ).result),
                 currencyName: user.basicCurrencyName,
-                cattery: User.Output(
-                    name: String(),
-                    deals: [Deal.Output](),
+                score: deal.score,
+                cattery: .init(
+                    id: dealUser.id,
+                    name: dealUser.name,
+                    avatarData: dealUserAvatarData,
+                    documentData: dealUser.documentPath != nil && !dealUser.isCatteryWaitVerify ? .init() : nil,
+                    deals: userDeals,
                     boughtDeals: [Deal.Output](),
                     ads: [Ad.Output](),
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    isPremiumUser: user.isPremiumUser
+                    score: .zero,
+                    isPremiumUser: dealUser.isPremiumUser
                 ),
                 country: deal.country,
                 city: deal.city,
-                description: deal.description,
-                whatsappNumber: deal.whatsappNumber,
-                telegramUsername: deal.telegramUsername,
-                instagramUsername: deal.instagramUsername,
-                facebookUsername: deal.facebookUsername,
-                vkUsername: deal.vkUsername,
-                mail: deal.mail,
                 buyer: nil,
                 offers: [Offer.Output]()
             ))
         }
         
-        return dealsOutput.sorted(by: { $0.score > $1.score })
+        return dealsOutput
     }
     
     private func someDeal(req: Request) async throws -> Deal.Output {
@@ -185,13 +218,14 @@ struct DealController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
+                    score: .zero,
                     isPremiumUser: offerBuyer.isPremiumUser
                 ),
                 deal: Deal.Output(
                     id: deal.id,
                     title: deal.title,
                     photoDatas: photoDatas,
-                    tags: deal.tags,
+                    tags: deal.tags.split(separator: "#").map({ String($0) }),
                     isPremiumDeal: deal.isPremiumDeal,
                     isActive: deal.isActive,
                     viewsCount: deal.viewsCount,
@@ -203,16 +237,18 @@ struct DealController: RouteCollection {
                         petBreeds: try await petType.$petBreeds.get(on: req.db)
                     ),
                     petBreed: .init(id: petBreed.id, name: petBreed.name, petType: petType),
-                    petClass: deal.petClass,
+                    petClass: .get(deal.petClass) ?? .allClass,
                     isMale: deal.isMale,
-                    age: deal.age,
+                    birthDate: deal.birthDate,
                     color: deal.color,
                     price: Double(try await CurrencyConverter.convert(
+                        req,
                         from: deal.currencyName,
                         to: user.basicCurrencyName,
                         amount: deal.price
                     ).result),
                     currencyName: user.basicCurrencyName,
+                    score: deal.score,
                     cattery: User.Output(
                         id: cattery.id,
                         name: cattery.name,
@@ -225,17 +261,12 @@ struct DealController: RouteCollection {
                         myOffers: [Offer.Output](),
                         offers: [Offer.Output](),
                         chatRooms: [ChatRoom.Output](),
+                        score: .zero,
                         isPremiumUser: cattery.isPremiumUser
                     ),
                     country: deal.country,
                     city: deal.city,
                     description: deal.description,
-                    whatsappNumber: deal.whatsappNumber,
-                    telegramUsername: deal.telegramUsername,
-                    instagramUsername: deal.instagramUsername,
-                    facebookUsername: deal.facebookUsername,
-                    vkUsername: deal.vkUsername,
-                    mail: deal.mail,
                     buyer: buyer == nil ? nil : User.Output(
                         id: buyer?.id,
                         name: buyer?.name ?? "",
@@ -248,6 +279,7 @@ struct DealController: RouteCollection {
                         myOffers: [Offer.Output](),
                         offers: [Offer.Output](),
                         chatRooms: [ChatRoom.Output](),
+                        score: .zero,
                         isPremiumUser: buyer?.isPremiumUser ?? false
                     ),
                     offers: [Offer.Output]()
@@ -264,6 +296,7 @@ struct DealController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
+                    score: .zero,
                     isPremiumUser: cattery.isPremiumUser
                 )
             ))
@@ -276,7 +309,7 @@ struct DealController: RouteCollection {
             id: deal.id,
             title: deal.title,
             photoDatas: photoDatas,
-            tags: deal.tags,
+            tags: deal.tags.split(separator: "#").map({ String($0) }),
             isPremiumDeal: deal.isPremiumDeal,
             isActive: deal.isActive,
             viewsCount: deal.viewsCount,
@@ -288,21 +321,23 @@ struct DealController: RouteCollection {
                 petBreeds: try await petType.$petBreeds.get(on: req.db)
             ),
             petBreed: .init(id: petBreed.id, name: petBreed.name, petType: petType),
-            petClass: deal.petClass,
+            petClass: .get(deal.petClass) ?? .allClass,
             isMale: deal.isMale,
-            age: deal.age,
+            birthDate: deal.birthDate,
             color: deal.color,
             price: Double(try await CurrencyConverter.convert(
+                req,
                 from: deal.currencyName,
                 to: user.basicCurrencyName,
                 amount: deal.price
             ).result),
             currencyName: user.basicCurrencyName,
+            score: deal.score,
             cattery: User.Output(
                 id: cattery.id,
                 name: cattery.name,
                 avatarData: catteryAvatarData,
-                documentData: nil,
+                documentData: cattery.documentPath != nil && !cattery.isCatteryWaitVerify ? .init() : nil,
                 description: cattery.description,
                 deals: [Deal.Output](),
                 boughtDeals: [Deal.Output](),
@@ -310,17 +345,12 @@ struct DealController: RouteCollection {
                 myOffers: [Offer.Output](),
                 offers: [Offer.Output](),
                 chatRooms: [ChatRoom.Output](),
+                score: .zero,
                 isPremiumUser: cattery.isPremiumUser
             ),
             country: deal.country,
             city: deal.city,
             description: deal.description,
-            whatsappNumber: deal.whatsappNumber,
-            telegramUsername: deal.telegramUsername,
-            instagramUsername: deal.instagramUsername,
-            facebookUsername: deal.facebookUsername,
-            vkUsername: deal.vkUsername,
-            mail: deal.mail,
             buyer: buyer == nil ? nil : User.Output(
                 id: buyer?.id,
                 name: buyer?.name ?? "",
@@ -333,6 +363,7 @@ struct DealController: RouteCollection {
                 myOffers: [Offer.Output](),
                 offers: [Offer.Output](),
                 chatRooms: [ChatRoom.Output](),
+                score: .zero,
                 isPremiumUser: buyer?.isPremiumUser ?? false
             ),
             offers: offersOutput
@@ -352,14 +383,18 @@ struct DealController: RouteCollection {
         }
         
         let buyer = try await offer.$buyer.get(on: req.db)
+        let cattery = try await deal.$cattery.get(on: req.db)
         
         deal.$buyer.id = buyer.id
         deal.isActive = false
         
+        cattery.score += 1 * (cattery.isPremiumUser ? 2 : 1)
+        
         try await deal.save(on: req.db)
+        try await cattery.save(on: req.db)
         
         for deviceToken in buyer.deviceTokens {
-            try? req.apns.send(.init(title: "You bought a pet"), to: deviceToken).wait()
+            _ = req.apns.send(.init(title: "You bought a pet"), to: deviceToken)
         }
         
         for deleteOffer in try await deal.$offers.get(on: req.db) {
@@ -367,7 +402,7 @@ struct DealController: RouteCollection {
                 try? await deleteOffer.delete(on: req.db)
                 
                 for deviceToken in deleteOffer.buyer.deviceTokens {
-                    try? req.apns.send(.init(title: "Your offer is rejected"), to: deviceToken).wait()
+                    _ = req.apns.send(.init(title: "Your offer is rejected"), to: deviceToken)
                 }
             }
         }
@@ -375,7 +410,7 @@ struct DealController: RouteCollection {
         return .ok
     }
     
-    private func create(req: Request) async throws -> HTTPStatus {
+    private func create(req: Request) async throws -> HTTPStatus {        
         let user = try req.auth.require(User.self)
         let deal = try req.content.decode(Deal.Input.self)
         var photoPaths = [String]()
@@ -392,11 +427,17 @@ struct DealController: RouteCollection {
             photoPaths.append(path)
         }
         
+        var tags = String()
+        
+        for tag in deal.tags where !tag.isEmpty {
+            tags += "#\(tag)"
+        }
+        
         try await Deal(
             id: deal.id,
             title: deal.title,
             photoPaths: photoPaths,
-            tags: deal.tags,
+            tags: tags,
             isPremiumDeal: deal.isPremiumDeal || user.isPremiumUser,
             isActive: deal.isActive,
             mode: deal.mode.rawValue,
@@ -404,20 +445,15 @@ struct DealController: RouteCollection {
             petBreedID: deal.petBreedID,
             petClass: deal.petClass.rawValue,
             isMale: deal.isMale,
-            age: deal.age,
+            birthDate: ISO8601DateFormatter().date(from: deal.birthDate) ?? .init(),
             color: deal.color,
             price: deal.price,
             catteryID: deal.catteryID,
             currencyName: deal.currencyName.rawValue,
+            score: user.score * (deal.isPremiumDeal || user.isPremiumUser ? 2 : 1),
             country: deal.country,
             city: deal.city,
             description: deal.description,
-            whatsappNumber: deal.whatsappNumber,
-            telegramUsername: deal.telegramUsername,
-            instagramUsername: deal.instagramUsername,
-            facebookUsername: deal.facebookUsername,
-            vkUsername: deal.vkUsername,
-            mail: deal.mail,
             buyerID: deal.buyerID
         ).save(on: req.db)
         
@@ -437,25 +473,31 @@ struct DealController: RouteCollection {
             throw Abort(.notFound)
         }
         
+        for photoPath in oldDeal.photoPaths {
+            try await FileManager.set(req: req, with: photoPath, data: .init())
+        }
+        
         for photoData in newDeal.photoDatas {
             let path = req.application.directory.publicDirectory.appending(UUID().uuidString)
             
-            try await req.fileio.writeFile(ByteBuffer(data: photoData), at: path)
+            try await FileManager.set(req: req, with: path, data: photoData)
             
             photoPaths.append(path)
         }
         
+        var tags = String()
+        
+        for tag in newDeal.tags where !tag.isEmpty {
+            tags += "#\(tag)"
+        }
+        
         oldDeal.isPremiumDeal = oldDeal.isPremiumDeal || user.isPremiumUser || newDeal.isPremiumDeal
-        oldDeal.mail = newDeal.mail
-        oldDeal.vkUsername = newDeal.vkUsername
-        oldDeal.facebookUsername = newDeal.facebookUsername
-        oldDeal.instagramUsername = newDeal.instagramUsername
-        oldDeal.telegramUsername = newDeal.telegramUsername
         oldDeal.city = newDeal.city
         oldDeal.country = newDeal.country
         oldDeal.price = newDeal.price
         oldDeal.currencyName = newDeal.currencyName.rawValue
-        oldDeal.age = newDeal.age
+        oldDeal.score = user.score * (oldDeal.isPremiumDeal || user.isPremiumUser ? 2 : 1)
+        oldDeal.birthDate = ISO8601DateFormatter().date(from: newDeal.birthDate) ?? .init()
         oldDeal.isMale = newDeal.isMale
         oldDeal.petClass = newDeal.petClass.rawValue
         oldDeal.$petBreed.id = newDeal.petBreedID
@@ -464,7 +506,7 @@ struct DealController: RouteCollection {
         oldDeal.title = newDeal.title
         oldDeal.description = newDeal.description
         oldDeal.photoPaths = photoPaths
-        oldDeal.tags = newDeal.tags
+        oldDeal.tags = tags
         oldDeal.color = newDeal.color
         
         try await oldDeal.save(on: req.db)
@@ -556,11 +598,11 @@ struct DealController: RouteCollection {
         deals = deals.filter(\.$isActive == true).filter(\.$id !~ checkedIDs)
         
         if let petTypeID = filter?.petTypeID {
-            deals = deals.filter(\.$petType.$id == petTypeID)
+            deals = deals.filter(\.$petType.$id == .bind(petTypeID.uuidString.lowercased()))
         }
         
         if let petBreedID = filter?.petBreedID {
-            deals = deals.filter(\.$petBreed.$id == petBreedID)
+            deals = deals.filter(\.$petBreed.$id == .bind(petBreedID.uuidString.lowercased()))
         }
         
         if let petClass = filter?.petClass, petClass != .allClass {
@@ -571,43 +613,23 @@ struct DealController: RouteCollection {
             deals = deals.filter(\.$isMale == isMale)
         }
         
-        if let country = filter?.country {
+        if let country = filter?.country, !country.isEmpty {
             deals = deals.filter(\.$country == country)
         }
         
-        if let city = filter?.city {
+        if let city = filter?.city, !city.isEmpty {
             deals = deals.filter(\.$city == city)
         }
-    }
-    
-    private struct Filter: Content {
-        var title: String?
-        var petTypeID: PetType.IDValue?
-        var petBreedID: PetBreed.IDValue?
-        var petClass: PetClass?
-        var isMale: Bool?
-        var country: String?
-        var city: String?
-        var checkedIDs: [Deal.IDValue]
         
-        init(
-            title: String? = nil,
-            petTypeID: PetType.IDValue? = nil,
-            petBreedID: PetBreed.IDValue? = nil,
-            petClass: PetClass? = nil,
-            isMale: Bool? = nil,
-            country: String? = nil,
-            city: String? = nil,
-            checkedIDs: [UUID] = .init()
-        ) {
-            self.title = title
-            self.petTypeID = petTypeID
-            self.petBreedID = petBreedID
-            self.petClass = petClass
-            self.isMale = isMale
-            self.country = country
-            self.city = city
-            self.checkedIDs = checkedIDs
+        if let title = filter?.title, !title.isEmpty {
+            deals = deals.group(.or) {
+                for word in title.split(separator: " ").map({ String($0) }) where !word.isEmpty {
+                    $0.group(.or) {
+                        $0.filter(Deal.self, \.$title, .custom("ilike"), "%\(word)%")
+                            .filter(Deal.self, \.$tags, .custom("ilike"), word)
+                    }
+                }
+            }
         }
     }
     

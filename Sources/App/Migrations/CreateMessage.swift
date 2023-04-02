@@ -18,8 +18,8 @@ struct CreateMessage: AsyncMigration {
             .field("body_path", .string)
             .field("created_at", .date)
             .field("updated_at", .date)
-            .field("user_id", .uuid, .required)
-            .field("chat_room_id", .uuid, .required)
+            .field("user_id", .uuid, .required, .references(User.schema, "id"))
+            .field("chat_room_id", .string, .required)
             .create()
     }
     

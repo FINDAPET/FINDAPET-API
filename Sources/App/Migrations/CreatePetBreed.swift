@@ -14,7 +14,7 @@ struct CreatePetBreed: AsyncMigration {
         try await database.schema(PetBreed.schema)
             .id()
             .field("name", .string, .required)
-            .field("pet_type_id", .uuid, .required)
+            .field("pet_type_id", .uuid, .required, .references(PetType.schema, "id"))
             .create()
     }
     

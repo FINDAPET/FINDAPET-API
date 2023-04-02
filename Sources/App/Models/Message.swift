@@ -36,7 +36,7 @@ final class Message: Model, Content {
     
     init() { }
     
-    init(id: UUID? = nil, text: String? = nil, isViewed: Bool = false, bodyPath: String? = nil, createdAt: Date? = nil, userID: User.IDValue, chatRoomID: User.IDValue) {
+    init(id: UUID? = nil, text: String? = nil, isViewed: Bool = false, bodyPath: String? = nil, createdAt: Date? = nil, userID: User.IDValue, chatRoomID: ChatRoom.IDValue) {
         self.id = id
         self.text = text
         self.isViewed = isViewed

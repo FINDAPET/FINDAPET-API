@@ -58,6 +58,7 @@ struct MessageController: RouteCollection {
                         myOffers: [Offer.Output](),
                         offers: [Offer.Output](),
                         chatRooms: [ChatRoom.Output](),
+                        score: .zero,
                         isPremiumUser: messageUser.isPremiumUser
                     ),
                     createdAt: message.$createdAt.timestamp,
@@ -96,6 +97,7 @@ struct MessageController: RouteCollection {
                 myOffers: [Offer.Output](),
                 offers: [Offer.Output](),
                 chatRooms: [ChatRoom.Output](),
+                score: .zero,
                 isPremiumUser: messageUser.isPremiumUser
             ),
             createdAt: message.$createdAt.timestamp,
@@ -112,9 +114,9 @@ struct MessageController: RouteCollection {
             throw Abort(.badRequest)
         }
         
-        if let secondUser = try? await User.query(on: req.db).all().filter({ $0.id == chatRoom.usersID.filter { $0 != user.id }.first }).first {
+        if let secondUser = try? await User.find(chatRoom.usersID.first { $0 != user.id }, on: req.db) {
             for deviceToken in secondUser.deviceTokens {
-                try? req.apns.send(.init(title: user.name, subtitle: "Sent you a new message"), to: deviceToken).wait()
+                _ = req.apns.send(.init(title: user.name, subtitle: "Sent you a new message"), to: deviceToken)
             }
         }
         
@@ -130,7 +132,7 @@ struct MessageController: RouteCollection {
             text: message.text,
             bodyPath: bodyPath,
             userID: message.userID,
-            chatRoomID: message.chatRoomID ?? UUID()
+            chatRoomID: message.chatRoomID ?? .init()
         ).save(on: req.db)
         
         return .ok

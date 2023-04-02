@@ -16,8 +16,8 @@ struct CreateComplaint: AsyncMigration {
             .field("text", .string, .required)
             .field("sender_id", .uuid, .required)
             .field("created_at", .date)
-            .field("deal_id", .uuid)
-            .field("user_id", .uuid)
+            .field("deal_id", .uuid, .references(Deal.schema, "id"))
+            .field("user_id", .uuid, .references(User.schema, "id"))
             .create()
     }
     

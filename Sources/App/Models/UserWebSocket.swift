@@ -9,7 +9,7 @@ import Foundation
 import WebSocketKit
 
 struct UserWebSocket {
-    var id: UUID?
+    var id: String?
     var ws: WebSocket
 }
 

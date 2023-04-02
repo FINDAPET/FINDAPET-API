@@ -23,7 +23,7 @@ final class Deal: Model, Content {
     var photoPaths: [String]
     
     @Field(key: "tags")
-    var tags: [String]
+    var tags: String
     
     @Field(key: "is_premium_deal")
     var isPremiumDeal: Bool
@@ -37,10 +37,10 @@ final class Deal: Model, Content {
     @Field(key: "mode")
     var mode: String
     
-    @Parent(key: "pet_type")
+    @Parent(key: "pet_type_id")
     var petType: PetType
     
-    @Parent(key: "pet_breed")
+    @Parent(key: "pet_breed_id")
     var petBreed: PetBreed
     
     @Field(key: "pet_class")
@@ -49,8 +49,8 @@ final class Deal: Model, Content {
     @Field(key: "is_male")
     var isMale: Bool
     
-    @Field(key: "age")
-    var age: String
+    @Field(key: "birth_date")
+    var birthDate: Date
     
     @Field(key: "color")
     var color: String
@@ -60,6 +60,9 @@ final class Deal: Model, Content {
     
     @Field(key: "currency_name")
     var currencyName: String
+    
+    @Field(key: "score")
+    var score: Int
     
     @Parent(key: "cattery_id")
     var cattery: User
@@ -73,24 +76,6 @@ final class Deal: Model, Content {
     @OptionalField(key: "description")
     var description: String?
     
-    @OptionalField(key: "whatsapp_number")
-    var whatsappNumber: String?
-    
-    @OptionalField(key: "telegram_username")
-    var telegramUsername: String?
-    
-    @OptionalField(key: "instagram_username")
-    var instagramUsername: String?
-    
-    @OptionalField(key: "facebook_username")
-    var facebookUsername: String?
-    
-    @OptionalField(key: "vk_username")
-    var vkUsername: String?
-    
-    @OptionalField(key: "mail")
-    var mail: String?
-    
     @OptionalParent(key: "buyer_id")
     var buyer: User?
     
@@ -99,7 +84,7 @@ final class Deal: Model, Content {
         
     init() {}
     
-    init(id: UUID? = nil, title: String, photoPaths: [String], tags: [String] = [String](), isPremiumDeal: Bool = false, isActive: Bool = true, viewsCount: Int = 0, mode: String, petTypeID: PetType.IDValue, petBreedID: PetBreed.IDValue, petClass: String, isMale: Bool, age: String, color: String, price: Double, catteryID: User.IDValue, currencyName: String, country: String? = nil, city: String? = nil, description: String? = nil, whatsappNumber: String? = nil, telegramUsername: String? = nil, instagramUsername: String? = nil, facebookUsername: String? = nil, vkUsername: String? = nil, mail: String? = nil, buyerID: User.IDValue? = nil) {
+    init(id: UUID? = nil, title: String, photoPaths: [String], tags: String = .init(), isPremiumDeal: Bool = false, isActive: Bool = true, viewsCount: Int = 0, mode: String, petTypeID: PetType.IDValue, petBreedID: PetBreed.IDValue, petClass: String, isMale: Bool, birthDate: Date, color: String, price: Double, catteryID: User.IDValue, currencyName: String, score: Int = .zero, country: String? = nil, city: String? = nil, description: String? = nil, buyerID: User.IDValue? = nil) {
         self.id = id
         self.title = title
         self.photoPaths = photoPaths
@@ -112,20 +97,15 @@ final class Deal: Model, Content {
         self.$petBreed.id = petBreedID
         self.petClass = petClass
         self.isMale = isMale
-        self.age = age
+        self.birthDate = birthDate
         self.color = color
         self.price = price
         self.currencyName = currencyName
+        self.score = score
         self.$cattery.id = catteryID
         self.country = country
         self.city = city
         self.description = description
-        self.whatsappNumber = whatsappNumber
-        self.telegramUsername = telegramUsername
-        self.instagramUsername = instagramUsername
-        self.facebookUsername = facebookUsername
-        self.vkUsername = vkUsername
-        self.mail = mail
         self.$buyer.id = buyerID
     }
     
@@ -144,7 +124,7 @@ extension Deal {
         var petBreedID: PetBreed.IDValue
         var petClass: PetClass
         var isMale: Bool
-        var age: String
+        var birthDate: String
         var color: String
         var price: Double
         var currencyName: Currency
@@ -152,15 +132,9 @@ extension Deal {
         var country: String?
         var city: String?
         var description: String?
-        var whatsappNumber: String?
-        var telegramUsername: String?
-        var instagramUsername: String?
-        var facebookUsername: String?
-        var vkUsername: String?
-        var mail: String?
         var buyerID: User.IDValue?
         
-        init(id: UUID? = nil, title: String, photoDatas: [Data], tags: [String] = [String](), isPremiumDeal: Bool = false, isActive: Bool = true, mode: DealMode, petTypeID: PetType.IDValue, petBreedID: PetBreed.IDValue, petClass: PetClass, isMale: Bool, age: String, color: String, price: Double, catteryID: User.IDValue, currencyName: Currency, country: String? = nil, city: String? = nil, description: String? = nil, whatsappNumber: String? = nil, telegramUsername: String? = nil, instagramUsername: String? = nil, facebookUsername: String? = nil, vkUsername: String? = nil, mail: String? = nil, buyerID: User.IDValue?) {
+        init(id: UUID? = nil, title: String, photoDatas: [Data], tags: [String] = [String](), isPremiumDeal: Bool = false, isActive: Bool = true, mode: DealMode, petTypeID: PetType.IDValue, petBreedID: PetBreed.IDValue, petClass: PetClass, isMale: Bool, birthDate: String, color: String, price: Double, catteryID: User.IDValue, currencyName: Currency, country: String? = nil, city: String? = nil, description: String? = nil, buyerID: User.IDValue? = nil) {
             self.id = id
             self.title = title
             self.photoDatas = photoDatas
@@ -172,7 +146,7 @@ extension Deal {
             self.petBreedID = petBreedID
             self.petClass = petClass
             self.isMale = isMale
-            self.age = age
+            self.birthDate = birthDate
             self.color = color
             self.price = price
             self.currencyName = currencyName
@@ -180,12 +154,6 @@ extension Deal {
             self.country = country
             self.city = city
             self.description = description
-            self.whatsappNumber = whatsappNumber
-            self.telegramUsername = telegramUsername
-            self.instagramUsername = instagramUsername
-            self.facebookUsername = facebookUsername
-            self.vkUsername = vkUsername
-            self.mail = mail
             self.buyerID = buyerID
         }
     }
@@ -203,26 +171,19 @@ extension Deal {
         var mode: String
         var petType: PetType.Output
         var petBreed: PetBreed.Output
-        var petClass: String
+        var petClass: PetClass
         var isMale: Bool
-        var age: String
+        var birthDate: Date
         var color: String
         var price: Double
         var currencyName: String
+        var score: Int
         var cattery: User.Output
         var country: String?
         var city: String?
         var description: String?
-        var whatsappNumber: String?
-        var telegramUsername: String?
-        var instagramUsername: String?
-        var facebookUsername: String?
-        var vkUsername: String?
-        var mail: String?
         var buyer: User.Output?
         var offers: [Offer.Output]
-        
-        var score: Int { self.cattery.deals.filter { $0.buyer != nil }.count * (self.isPremiumDeal ? 2 : 1) }
     }
 }
 

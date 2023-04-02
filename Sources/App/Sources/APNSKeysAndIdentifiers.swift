@@ -8,7 +8,7 @@
 import Foundation
 import JWTKit
 
-let appleECP8PrivateKey =
+let appleECP8PrivateKey: StaticString =
 """
 -----BEGIN PRIVATE KEY-----
 MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQg7RRS2oUF9Tpy1LPD
@@ -18,5 +18,5 @@ Bz1VuMrd
 -----END PRIVATE KEY-----
 """
 let keyIdentifier: JWKIdentifier = "CX7HTV253D"
-let teamIdentifier = "FY2MUX2TBL"
-let topic = "com.artemiy.FINDAPET-App"
+let teamIdentifier: StaticString = "FY2MUX2TBL"
+let topic: StaticString = "com.artemiy.FINDAPET-App"

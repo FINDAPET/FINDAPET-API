@@ -9,7 +9,7 @@ import Foundation
 import WebSocketKit
 
 struct ChatRoomWebSocket {
-    var id: UUID?
+    var id: String?
     var users: [UserWebSocket]
 }
 

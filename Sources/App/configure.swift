@@ -9,11 +9,11 @@ public func configure(_ app: Application) throws {
     
     app.apns.configuration = try .init(
         authenticationMethod: .jwt(
-            key: .private(pem: Data(appleECP8PrivateKey.utf8)),
+            key: .private(pem: Data(String(appleECP8PrivateKey).utf8)),
             keyIdentifier: keyIdentifier,
-            teamIdentifier: teamIdentifier
+            teamIdentifier: .init(teamIdentifier)
         ),
-        topic: topic,
+        topic: .init(topic),
         environment: .production
     )
     
@@ -30,23 +30,26 @@ public func configure(_ app: Application) throws {
     
     app.views.use(.leaf)
     
-    app.routes.defaultMaxBodySize = "2mb"
+    app.routes.defaultMaxBodySize = "50mb"
+    app.http.server.configuration.responseCompression = .enabled
+    app.http.server.configuration.requestDecompression = .enabled(limit: .none)
 
     // register routes
     try routes(app)
     
     app.migrations.add(
-        CreateAd(),
-        CreateDeal(),
         CreateUser(),
+        CreatePetType(),
+        CreatePetBreed(),
+        CreateDeal(),
+        CreateAd(),
         CreateUserToken(),
         CreateOffer(),
         CreateChatRoom(),
-        CreateMessage(),
         CreateComplaint(),
         CreateNotificationScreen(),
-        CreatePetBreed(),
-        CreatePetType()
+        CreateSearchTitle(),
+        CreateMessage()
     )
     
     #if DEBUG

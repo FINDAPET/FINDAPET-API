@@ -28,9 +28,6 @@ final class User: Model, Content {
     @Field(key: "is_active_cattery")
     var isActiveCattery: Bool
     
-    @Field(key: "chats_id")
-    var chatsID: [ChatRoom.IDValue]
-    
     @Field(key: "is_cattery_wait_verify")
     var isCatteryWaitVerify: Bool
     
@@ -48,6 +45,9 @@ final class User: Model, Content {
     
     @Field(key: "device_tokens")
     var deviceTokens: [String]
+    
+    @Field(key: "score")
+    var score: Int
     
     @OptionalField(key: "country_code")
     var countryCode: String?
@@ -76,9 +76,12 @@ final class User: Model, Content {
     @Children(for: \.$cattery)
     var offers: [Offer]
     
+    @Children(for: \.$user)
+    var searchTitles: [SearchTitle]
+    
     init() { }
     
-    init(id: UUID? = nil, email: String, passwordHash: String, name: String = "", isActiveCattery: Bool = false, avatarPath: String? = nil, documentPath: String? = nil, description: String? = nil, chatsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), isCatteryWaitVerify: Bool = false, isAdmin: Bool = false, deviceTokens: [String] = .init(), chatRoomsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), countryCode: String? = nil, isPremiumUser: Bool = false, basicCurrencyName: String = "USD") {
+    init(id: UUID? = nil, email: String, passwordHash: String, name: String = "", isActiveCattery: Bool = false, avatarPath: String? = nil, documentPath: String? = nil, description: String? = nil, isCatteryWaitVerify: Bool = false, isAdmin: Bool = false, deviceTokens: [String] = .init(), score: Int = .zero, chatRoomsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), countryCode: String? = nil, isPremiumUser: Bool = false, basicCurrencyName: String = "USD") {
         self.id = id
         self.email = email
         self.passwordHash = passwordHash
@@ -87,10 +90,10 @@ final class User: Model, Content {
         self.avatarPath = avatarPath
         self.documentPath = documentPath
         self.description = description
-        self.chatsID = chatsID
         self.isCatteryWaitVerify = isCatteryWaitVerify
         self.isAdmin = isAdmin
         self.deviceTokens = deviceTokens
+        self.score = score
         self.chatRoomsID = chatRoomsID
         self.countryCode = countryCode
         self.isPremiumUser = isPremiumUser
@@ -171,6 +174,7 @@ extension User {
         var myOffers: [Offer.Output]
         var offers: [Offer.Output]
         var chatRooms: [ChatRoom.Output]
+        var score: Int
         var isPremiumUser: Bool
     }
 }

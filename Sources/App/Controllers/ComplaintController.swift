@@ -53,11 +53,11 @@ struct ComplaintController: RouteCollection {
                 let petType = try await deal.$petType.get(on: req.db)
                 let petBreed = try await deal.$petBreed.get(on: req.db)
                 
-                dealOutput = .init(
+                dealOutput = Deal.Output(
                     id: deal.id,
                     title: deal.title,
                     photoDatas: datas,
-                    tags: deal.tags,
+                    tags: deal.tags.split(separator: "#").map({ String($0) }),
                     isPremiumDeal: deal.isPremiumDeal,
                     isActive: deal.isActive,
                     viewsCount: deal.viewsCount,
@@ -69,12 +69,13 @@ struct ComplaintController: RouteCollection {
                         petBreeds: try await petType.$petBreeds.get(on: req.db)
                     ),
                     petBreed: .init(id: petBreed.id, name: petBreed.name, petType: petType),
-                    petClass: deal.petClass,
+                    petClass: .get(deal.petClass) ?? .allClass,
                     isMale: deal.isMale,
-                    age: deal.age,
+                    birthDate: deal.birthDate,
                     color: deal.color,
                     price: deal.price,
                     currencyName: deal.currencyName,
+                    score: deal.score,
                     cattery: .init(
                         name: user.name,
                         avatarData: avatarData,
@@ -85,17 +86,12 @@ struct ComplaintController: RouteCollection {
                         myOffers: .init(),
                         offers: .init(),
                         chatRooms: .init(),
+                        score: .zero,
                         isPremiumUser: user.isPremiumUser
                     ),
                     country: deal.country,
                     city: deal.city,
                     description: deal.description,
-                    whatsappNumber: deal.whatsappNumber,
-                    telegramUsername: deal.telegramUsername,
-                    instagramUsername: deal.instagramUsername,
-                    facebookUsername: deal.facebookUsername,
-                    vkUsername: deal.vkUsername,
-                    mail: deal.mail,
                     buyer: nil,
                     offers: [Offer.Output]()
                 )
@@ -119,6 +115,7 @@ struct ComplaintController: RouteCollection {
                     myOffers: .init(),
                     offers: .init(),
                     chatRooms: .init(),
+                    score: .zero,
                     isPremiumUser: user.isPremiumUser
                 )
             }
@@ -140,6 +137,7 @@ struct ComplaintController: RouteCollection {
                     myOffers: .init(),
                     offers: .init(),
                     chatRooms: .init(),
+                    score: .zero,
                     isPremiumUser: sender.isPremiumUser
                 ),
                 createdAt: complaint.createdAt,
@@ -181,11 +179,11 @@ struct ComplaintController: RouteCollection {
             let petType = try await deal.$petType.get(on: req.db)
             let petBreed = try await deal.$petBreed.get(on: req.db)
             
-            dealOutput = .init(
+            dealOutput = Deal.Output(
                 id: deal.id,
                 title: deal.title,
                 photoDatas: datas,
-                tags: deal.tags,
+                tags: deal.tags.split(separator: "#").map({ String($0) }),
                 isPremiumDeal: deal.isPremiumDeal,
                 isActive: deal.isActive,
                 viewsCount: deal.viewsCount,
@@ -197,12 +195,13 @@ struct ComplaintController: RouteCollection {
                     petBreeds: try await petType.$petBreeds.get(on: req.db)
                 ),
                 petBreed: .init(id: petBreed.id, name: petBreed.name, petType: petType),
-                petClass: deal.petClass,
+                petClass: .get(deal.petClass) ?? .allClass,
                 isMale: deal.isMale,
-                age: deal.age,
+                birthDate: deal.birthDate,
                 color: deal.color,
                 price: deal.price,
                 currencyName: deal.currencyName,
+                score: deal.score,
                 cattery: .init(
                     name: user.name,
                     avatarData: avatarData,
@@ -213,17 +212,12 @@ struct ComplaintController: RouteCollection {
                     myOffers: .init(),
                     offers: .init(),
                     chatRooms: .init(),
+                    score: .zero,
                     isPremiumUser: user.isPremiumUser
                 ),
                 country: deal.country,
                 city: deal.city,
                 description: deal.description,
-                whatsappNumber: deal.whatsappNumber,
-                telegramUsername: deal.telegramUsername,
-                instagramUsername: deal.instagramUsername,
-                facebookUsername: deal.facebookUsername,
-                vkUsername: deal.vkUsername,
-                mail: deal.mail,
                 buyer: nil,
                 offers: [Offer.Output]()
             )
@@ -247,6 +241,7 @@ struct ComplaintController: RouteCollection {
                 myOffers: .init(),
                 offers: .init(),
                 chatRooms: .init(),
+                score: .zero,
                 isPremiumUser: user.isPremiumUser
             )
         }
@@ -268,6 +263,7 @@ struct ComplaintController: RouteCollection {
                 myOffers: .init(),
                 offers: .init(),
                 chatRooms: .init(),
+                score: .zero,
                 isPremiumUser: sender.isPremiumUser
             ),
             createdAt: complaint.createdAt,

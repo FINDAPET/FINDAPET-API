@@ -13,8 +13,8 @@ final class ChatRoom: Model, Content {
     
     static let schema = "chat_rooms"
     
-    @ID(key: .id)
-    var id: UUID?
+    @ID(custom: .id, generatedBy: .user)
+    var id: String?
     
     @Field(key: "users_id")
     var usersID: [User.IDValue]
@@ -24,7 +24,7 @@ final class ChatRoom: Model, Content {
     
     init() { }
     
-    init(id: UUID? = nil, usersID: [User.IDValue] = [User.IDValue]()) {
+    init(id: String? = nil, usersID: [User.IDValue] = .init()) {
         self.id = id
         self.usersID = usersID
     }
@@ -33,10 +33,10 @@ final class ChatRoom: Model, Content {
 
 extension ChatRoom {
     struct Input: Content {
-        var id: UUID?
+        var id: String?
         var usersID: [User.IDValue]
         
-        init(id: UUID? = nil, usersID: [User.IDValue] = [User.IDValue]()) {
+        init(id: String? = nil, usersID: [User.IDValue] = .init()) {
             self.id = id
             self.usersID = usersID
         }
@@ -45,7 +45,7 @@ extension ChatRoom {
 
 extension ChatRoom {
     struct Output: Content {
-        var id: UUID?
+        var id: String?
         var users: [User.Output]
         var messages: [Message.Output]
     }
