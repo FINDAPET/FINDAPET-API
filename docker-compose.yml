@@ -27,7 +27,7 @@ x-shared_environment: &shared_environment
   DATABASE_PASSWORD: vapor_password
   
 services:
-  app:
+  api:
     image: findapet-api:latest
     build:
       context: .
