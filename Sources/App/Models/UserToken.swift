@@ -22,10 +22,14 @@ final class UserToken: Model, Content {
     @Parent(key: "user_id")
     var user: User
     
+    @OptionalField(key: "device_id")
+    var deviceID: UUID?
+    
     init() { }
     
-    init(id: UUID? = nil, value: String, userID: User.IDValue) {
+    init(id: UUID? = nil, deviceID: UUID? = nil, value: String, userID: User.IDValue) {
         self.id = id
+        self.deviceID = deviceID
         self.value = value
         self.$user.id = userID
     }
@@ -39,20 +43,6 @@ extension UserToken: ModelTokenAuthenticatable {
     
     var isValid: Bool { true }
     
-}
-
-extension UserToken {
-    struct Input: Content {
-        var id: UUID?
-        var value: String
-        var userID: User.IDValue
-        
-        init(id: UUID? = nil, value: String, userID: User.IDValue) {
-            self.id = id
-            self.value = value
-            self.userID = userID
-        }
-    }
 }
 
 extension UserToken {

@@ -28,9 +28,6 @@ final class User: Model, Content {
     @Field(key: "is_active_cattery")
     var isActiveCattery: Bool
     
-    @Field(key: "chats_id")
-    var chatsID: [ChatRoom.IDValue]
-    
     @Field(key: "is_cattery_wait_verify")
     var isCatteryWaitVerify: Bool
     
@@ -46,11 +43,14 @@ final class User: Model, Content {
     @Field(key: "basic_currency_name")
     var basicCurrencyName: String
     
+    @Field(key: "device_tokens")
+    var deviceTokens: [String]
+    
+    @Field(key: "score")
+    var score: Int
+    
     @OptionalField(key: "country_code")
     var countryCode: String?
-    
-    @OptionalField(key: "device_token")
-    var deviceToken: String?
     
     @OptionalField(key: "avatar_path")
     var avatarPath: String?
@@ -76,9 +76,12 @@ final class User: Model, Content {
     @Children(for: \.$cattery)
     var offers: [Offer]
     
+    @Children(for: \.$user)
+    var searchTitles: [SearchTitle]
+    
     init() { }
     
-    init(id: UUID? = nil, email: String, passwordHash: String, name: String = "", isActiveCattery: Bool = false, avatarPath: String? = nil, documentPath: String? = nil, description: String? = nil, chatsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), isCatteryWaitVerify: Bool = false, isAdmin: Bool = false, deviceToken: String? = nil, chatRoomsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), countryCode: String? = nil, isPremiumUser: Bool = false, basicCurrencyName: String = "USD") {
+    init(id: UUID? = nil, email: String, passwordHash: String, name: String = "", isActiveCattery: Bool = false, avatarPath: String? = nil, documentPath: String? = nil, description: String? = nil, isCatteryWaitVerify: Bool = false, isAdmin: Bool = false, deviceTokens: [String] = .init(), score: Int = .zero, chatRoomsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), countryCode: String? = nil, isPremiumUser: Bool = false, basicCurrencyName: String = "USD") {
         self.id = id
         self.email = email
         self.passwordHash = passwordHash
@@ -87,10 +90,10 @@ final class User: Model, Content {
         self.avatarPath = avatarPath
         self.documentPath = documentPath
         self.description = description
-        self.chatsID = chatsID
         self.isCatteryWaitVerify = isCatteryWaitVerify
         self.isAdmin = isAdmin
-        self.deviceToken = deviceToken
+        self.deviceTokens = deviceTokens
+        self.score = score
         self.chatRoomsID = chatRoomsID
         self.countryCode = countryCode
         self.isPremiumUser = isPremiumUser
@@ -125,8 +128,8 @@ extension User: ModelAuthenticatable {
 }
 
 extension User {
-    func generateToken() throws -> UserToken {
-        return try .init(value: [UInt8].random(count: 16).base64, userID: self.requireID())
+    func generateToken(deviceID: UUID? = nil) throws -> UserToken {
+        return try .init(deviceID: deviceID, value: [UInt8].random(count: 16).base64, userID: self.requireID())
     }
 }
 
@@ -137,20 +140,20 @@ extension User {
         var avatarData: Data?
         var documentData: Data?
         var description: String?
-        var deviceToken: String?
+        var deviceTokens: [String]
         var isCatteryWaitVerify: Bool
         var chatRoomsID: [ChatRoom.IDValue]
         var countryCode: String?
         var basicCurrencyName: Currency
         
-        init(id: UUID? = nil, name: String = "", avatarData: Data? = nil, documentData: Data? = nil, description: String? = nil, isCatteryWaitVerify: Bool = false, deviceToken: String? = nil, chatRoomsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), countryCode: String? = nil, basicCurrencyName: Currency = .USD) {
+        init(id: UUID? = nil, name: String = "", avatarData: Data? = nil, documentData: Data? = nil, description: String? = nil, isCatteryWaitVerify: Bool = false, deviceTokens: [String] = .init(), chatRoomsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), countryCode: String? = nil, basicCurrencyName: Currency = .USD) {
             self.id = id
             self.name = name
             self.avatarData = avatarData
             self.documentData = documentData
             self.description = description
             self.isCatteryWaitVerify = isCatteryWaitVerify
-            self.deviceToken = deviceToken
+            self.deviceTokens = deviceTokens
             self.chatRoomsID = chatRoomsID
             self.countryCode = countryCode
             self.basicCurrencyName = basicCurrencyName
@@ -171,6 +174,7 @@ extension User {
         var myOffers: [Offer.Output]
         var offers: [Offer.Output]
         var chatRooms: [ChatRoom.Output]
+        var score: Int
         var isPremiumUser: Bool
     }
 }

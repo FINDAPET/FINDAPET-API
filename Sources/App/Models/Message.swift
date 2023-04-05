@@ -17,7 +17,10 @@ final class Message: Model, Content {
     var id: UUID?
     
     @Field(key: "text")
-    var text: String
+    var text: String?
+    
+    @Field(key: "is_viewed")
+    var isViewed: Bool
     
     @OptionalField(key: "body_path")
     var bodyPath: String?
@@ -33,9 +36,10 @@ final class Message: Model, Content {
     
     init() { }
     
-    init(id: UUID? = nil, text: String, bodyPath: String? = nil, createdAt: Date? = nil, userID: User.IDValue, chatRoomID: User.IDValue) {
+    init(id: UUID? = nil, text: String? = nil, isViewed: Bool = false, bodyPath: String? = nil, createdAt: Date? = nil, userID: User.IDValue, chatRoomID: ChatRoom.IDValue) {
         self.id = id
         self.text = text
+        self.isViewed = isViewed
         self.bodyPath = bodyPath
         self.$createdAt.timestamp = createdAt
         self.$user.id = userID
@@ -47,14 +51,23 @@ final class Message: Model, Content {
 extension Message {
     struct Input: Content {
         var id: UUID?
-        var text: String
+        var text: String?
+        var isViewed: Bool
         var bodyData: Data?
         var userID: User.IDValue
         var chatRoomID: ChatRoom.IDValue?
         
-        init(id: UUID? = nil, text: String, bodyData: Data? = nil, userID: User.IDValue, chatRoomID: ChatRoom.IDValue? = nil) {
+        init(
+            id: UUID? = nil,
+            text: String? = nil,
+            isViewed: Bool = false,
+            bodyData: Data? = nil,
+            userID: User.IDValue,
+            chatRoomID: ChatRoom.IDValue? = nil
+        ) {
             self.id = id
             self.text = text
+            self.isViewed = isViewed
             self.bodyData = bodyData
             self.userID = userID
             self.chatRoomID = chatRoomID
@@ -65,7 +78,8 @@ extension Message {
 extension Message {
     struct Output: Content {
         var id: UUID?
-        var text: String
+        var text: String?
+        var isViewed: Bool
         var bodyData: Data?
         var user: User.Output
         var createdAt: Date?

@@ -17,28 +17,36 @@ final class FileManager {
         }
         
         if path.first == "/" {
-            return try (Data(buffer: try await req.fileio.collectFile(at: path)) as NSData).decompressed(using: .lzfse) as Data
+            return Data(buffer: try await req.fileio.collectFile(at: path))
         }
         
-        return try await (URLSession.shared.data(from: URL(string: path) ?? URL(fileURLWithPath: "")).0 as NSData)
-            .decompressed(using: .lzfse) as Data
+        guard let buffer = try await req.client.get(.init(string: path), headers: req.headers).body else {
+            return nil
+        }
+        
+        return .init(buffer: buffer)
     }
     
-    static func set(req: Request, with path: String, data: Data) async throws {
+    static func set(req: Request, with path: String, data: Data) async throws {        
         guard !path.isEmpty else {
             throw FileManagerError.badPath
         }
         
         if path.first == "/" {
-            try await req.fileio.writeFile(ByteBuffer(data: try (data as NSData).compressed(using: .lzfse) as Data), at: path)
+            try await req.fileio.writeFile(.init(data: data), at: path)
+            
+            return
         }
         
-        var req = URLRequest(url: .init(string: path) ?? .init(fileURLWithPath: .init()))
+        let statusCode = try await req.client.post(
+            .init(string: path),
+            headers: .init([(Headers.applicationJson.rawValue, Headers.contentType.rawValue)]), beforeSend: {
+                try $0.content.encode(data, as: .formData)
+            }).status.code
         
-        req.httpBody = try (data as NSData).compressed(using: .lzfse) as Data
-        req.httpMethod = "POST"
-        
-        _ = try await URLSession.shared.data(for: req)
+        guard statusCode == 200 else {
+            throw Abort(.init(statusCode: .init(statusCode)))
+        }
     }
     
 }

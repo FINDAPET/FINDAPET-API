@@ -48,6 +48,7 @@ struct MessageController: RouteCollection {
                 messages.append(Message.Output(
                     id: message.id,
                     text: message.text,
+                    isViewed: message.isViewed,
                     user: User.Output(
                         id: messageUser.id,
                         name: messageUser.name,
@@ -57,6 +58,7 @@ struct MessageController: RouteCollection {
                         myOffers: [Offer.Output](),
                         offers: [Offer.Output](),
                         chatRooms: [ChatRoom.Output](),
+                        score: .zero,
                         isPremiumUser: messageUser.isPremiumUser
                     ),
                     createdAt: message.$createdAt.timestamp,
@@ -85,6 +87,7 @@ struct MessageController: RouteCollection {
         return Message.Output(
             id: message.id,
             text: message.text,
+            isViewed: message.isViewed,
             user: User.Output(
                 id: messageUser.id,
                 name: messageUser.name,
@@ -94,6 +97,7 @@ struct MessageController: RouteCollection {
                 myOffers: [Offer.Output](),
                 offers: [Offer.Output](),
                 chatRooms: [ChatRoom.Output](),
+                score: .zero,
                 isPremiumUser: messageUser.isPremiumUser
             ),
             createdAt: message.$createdAt.timestamp,
@@ -110,9 +114,10 @@ struct MessageController: RouteCollection {
             throw Abort(.badRequest)
         }
         
-        if let secondUser = try? await User.query(on: req.db).all().filter({ $0.id == chatRoom.usersID.filter { $0 != user.id }.first }).first,
-           let deviceToken = secondUser.deviceToken {
-            try? req.apns.send(.init(title: user.name, subtitle: "Sent you a new message"), to: deviceToken).wait()
+        if let secondUser = try? await User.find(chatRoom.usersID.first { $0 != user.id }, on: req.db) {
+            for deviceToken in secondUser.deviceTokens {
+                _ = req.apns.send(.init(title: user.name, subtitle: "Sent you a new message"), to: deviceToken)
+            }
         }
         
         var bodyPath: String?
@@ -127,7 +132,7 @@ struct MessageController: RouteCollection {
             text: message.text,
             bodyPath: bodyPath,
             userID: message.userID,
-            chatRoomID: message.chatRoomID ?? UUID()
+            chatRoomID: message.chatRoomID ?? .init()
         ).save(on: req.db)
         
         return .ok
@@ -162,6 +167,10 @@ struct MessageController: RouteCollection {
         }
         
         try await message.delete(on: req.db)
+        
+        if let path = message.bodyPath {
+            try await FileManager.set(req: req, with: path, data: .init())
+        }
         
         return .ok
     }

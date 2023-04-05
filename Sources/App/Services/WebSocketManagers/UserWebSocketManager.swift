@@ -18,9 +18,9 @@ final class UserWebSocketManager {
     
     static let shared = UserWebSocketManager([UserWebSocket]())
     
-    func addUserWebSocket(id: UUID?, ws: WebSocket) {
+    func addUserWebSocket(id: String?, ws: WebSocket) {
         for i in 0 ..< self.userWebSockets.count {
-            if self.userWebSockets[i].id == id {
+            if i < self.userWebSockets.count, self.userWebSockets[i].id == id {
                 self.userWebSockets[i].ws = ws
             }
         }
@@ -30,9 +30,9 @@ final class UserWebSocketManager {
         }
     }
     
-    func removeUserWebSocket(id: UUID?) {
+    func removeUserWebSocket(id: String?) {
         for i in 0 ..< self.userWebSockets.count {
-            if self.userWebSockets[i].id == id {
+            if i < self.userWebSockets.count, self.userWebSockets[i].id == id {
                 self.userWebSockets[i].ws.close().whenFailure { print("❌ Error: \($0.localizedDescription)") }
                 self.userWebSockets.remove(at: i)
             }

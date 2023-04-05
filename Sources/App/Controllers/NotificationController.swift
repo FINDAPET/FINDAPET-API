@@ -27,15 +27,15 @@ struct NotificationController: RouteCollection {
         if !notification.coutryCodes.isEmpty {
             for countryCode in notification.coutryCodes {
                 for user in try await User.query(on: req.db).all().filter({ $0.countryCode == countryCode }) {
-                    if let deviceToken = user.deviceToken {
-                        try? req.apns.send(.init(title: notification.title), to: deviceToken).wait()
+                    for deviceToken in user.deviceTokens {
+                        _ = req.apns.send(.init(title: notification.title), to: deviceToken)
                     }
                 }
             }
         } else {
             for user in try await User.query(on: req.db).all() {
-                if let deviceToken = user.deviceToken {
-                    try? req.apns.send(.init(title: notification.title), to: deviceToken).wait()
+                for deviceToken in user.deviceTokens {
+                    _ = req.apns.send(.init(title: notification.title), to: deviceToken)
                 }
             }
         }
@@ -51,8 +51,8 @@ struct NotificationController: RouteCollection {
         let notification = try req.content.decode(Notification.self)
         
         for userID in notification.usersID {
-            if let deviceToken = try? await User.find(userID, on: req.db)?.deviceToken {
-                try? req.apns.send(.init(title: notification.title), to: deviceToken).wait()
+            for deviceToken in (try? await User.find(userID, on: req.db)?.deviceTokens) ?? .init() {
+                _ = req.apns.send(.init(title: notification.title), to: deviceToken)
             }
         }
         

@@ -24,9 +24,16 @@ final class URLConstructor {
     static let exchange = URLConstructor(scheme: .http, host: .exchange)
     
 //    MARK: Exchange
-    func convert() -> URL {
-        self.baseURL
-            .appendingPathComponent(Paths.convert.rawValue)
+    func convert(_ model: ExchangeConvert.Input) -> URL {
+        var components = URLComponents(string: self.baseURL.appendingPathComponent(Paths.convert.rawValue).absoluteString)
+        
+        components?.queryItems = [
+            .init(name: "from", value: model.from),
+            .init(name: "to", value: model.to),
+            .init(name: "amount", value: .init(model.amount ?? 1))
+        ]
+                        
+        return components?.url ?? self.baseURL.appendingPathComponent(Paths.convert.rawValue)
     }
     
 }

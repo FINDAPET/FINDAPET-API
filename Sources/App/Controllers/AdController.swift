@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import NIOFoundationCompat
 import Vapor
 
 struct AdController: RouteCollection {
@@ -15,8 +14,7 @@ struct AdController: RouteCollection {
         let ads = routes.grouped("ads")
         let userTokenProtected = ads.grouped(UserToken.authenticator())
         
-        ads.get("all", use: self.index(req:))
-        
+        userTokenProtected.get("all", use: self.index(req:))
         userTokenProtected.post("new", use: self.create(req:))
         userTokenProtected.post("new", "admin", use: self.createAdmin(req:))
         userTokenProtected.put("change", "admin", use: self.change(req:))
@@ -28,6 +26,10 @@ struct AdController: RouteCollection {
     }
     
     private func index(req: Request) async throws -> [Ad.Output] {
+        guard try req.auth.require(User.self).isAdmin else {
+            throw Abort(.badRequest)
+        }
+        
         let ads = try await Ad.query(on: req.db).all().filter { $0.isActive }
         var adsOutput = [Ad.Output]()
         
@@ -56,6 +58,7 @@ struct AdController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
+                    score: .zero,
                     isPremiumUser: cattery?.isPremiumUser ?? false
                 )
             ))
@@ -93,6 +96,7 @@ struct AdController: RouteCollection {
                 myOffers: [Offer.Output](),
                 offers: [Offer.Output](),
                 chatRooms: [ChatRoom.Output](),
+                score: .zero,
                 isPremiumUser: cattery?.isPremiumUser ?? false
             )
         )
@@ -131,6 +135,7 @@ struct AdController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
+                    score: .zero,
                     isPremiumUser: cattery?.isPremiumUser ?? false
                 )
             ))
@@ -235,6 +240,7 @@ struct AdController: RouteCollection {
         }
         
         try await ad.delete(on: req.db)
+        try await FileManager.set(req: req, with: ad.contentPath, data: .init())
         
         return .ok
     }

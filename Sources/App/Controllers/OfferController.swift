@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import NIOFoundationCompat
 import Vapor
 
 struct OfferController: RouteCollection {
@@ -49,6 +48,9 @@ struct OfferController: RouteCollection {
                 catteryPhtotData = try? await FileManager.get(req: req, with: path)
             }
             
+            let petType = try await deal.$petType.get(on: req.db)
+            let petBreed = try await deal.$petBreed.get(on: req.db)
+            
             offersOutput.append(Offer.Output(
                 id: offer.id,
                 price: offer.price,
@@ -65,29 +67,37 @@ struct OfferController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
+                    score: .zero,
                     isPremiumUser: buyer.isPremiumUser
                 ),
                 deal: Deal.Output(
                     id: deal.id,
                     title: deal.title,
                     photoDatas: [dealPhotoData ?? Data()],
-                    tags: deal.tags,
+                    tags: deal.tags.split(separator: "#").map({ String($0) }),
                     isPremiumDeal: deal.isPremiumDeal,
                     isActive: deal.isActive,
                     viewsCount: deal.viewsCount,
                     mode: deal.mode,
-                    petType: deal.petType,
-                    petBreed: deal.petBreed,
-                    petClass: deal.petClass,
+                    petType: .init(
+                        id: petType.id,
+                        localizedNames: petType.localizedNames,
+                        imageData: (try? await FileManager.get(req: req, with: petType.imagePath)) ?? .init(),
+                        petBreeds: try await petType.$petBreeds.get(on: req.db)
+                    ),
+                    petBreed: .init(id: petBreed.id, name: petBreed.name, petType: petType),
+                    petClass: .get(deal.petClass) ?? .allClass,
                     isMale: deal.isMale,
-                    age: deal.age,
+                    birthDate: deal.birthDate,
                     color: deal.color,
                     price: Double(try await CurrencyConverter.convert(
+                        req,
                         from: deal.currencyName,
                         to: user.basicCurrencyName,
                         amount: deal.price
                     ).result),
                     currencyName: user.basicCurrencyName,
+                    score: deal.score,
                     cattery: User.Output(
                         name: String(),
                         deals: [Deal.Output](),
@@ -96,17 +106,12 @@ struct OfferController: RouteCollection {
                         myOffers: [Offer.Output](),
                         offers: [Offer.Output](),
                         chatRooms: [ChatRoom.Output](),
+                        score: .zero,
                         isPremiumUser: user.isPremiumUser
                     ),
                     country: deal.country,
                     city: deal.city,
                     description: deal.description,
-                    whatsappNumber: deal.whatsappNumber,
-                    telegramUsername: deal.telegramUsername,
-                    instagramUsername: deal.instagramUsername,
-                    facebookUsername: deal.facebookUsername,
-                    vkUsername: deal.vkUsername,
-                    mail: deal.mail,
                     buyer: nil,
                     offers: [Offer.Output]()
                 ),
@@ -122,6 +127,7 @@ struct OfferController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
+                    score: .zero,
                     isPremiumUser: cattery.isPremiumUser
                 )
             ))
@@ -139,7 +145,8 @@ struct OfferController: RouteCollection {
             throw Abort(.badRequest)
         }
         
-        guard let deviceToken = try await User.find(offerInput.catteryID, on: req.db)?.deviceToken else {
+        guard let deviceTokens = try await User.find(offerInput.catteryID, on: req.db)?.deviceTokens,
+              !deviceTokens.isEmpty else {
             throw Abort(.notFound)
         }
         
@@ -151,7 +158,9 @@ struct OfferController: RouteCollection {
             currencyName: offerInput.currencyName.rawValue
         ).save(on: req.db)
         
-        try? req.apns.send(.init(title: "You have a new offer"), to: deviceToken).wait()
+        for deviceToken in deviceTokens {
+            _ = req.apns.send(.init(title: "You have a new offer"), to: deviceToken)
+        }
         
         return .ok
     }

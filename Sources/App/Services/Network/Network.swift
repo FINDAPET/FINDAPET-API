@@ -10,189 +10,638 @@ import Vapor
 
 final class Network {
     
-//    MARK: Request 1
+//    MARK: - Request 1
     static func request<T: Decodable>(
+        _ request: Request,
         url: URL,
         encodableModel: Encodable? = nil,
         authMode: HTTPAuthentaficationMode? = nil,
         method: HTTPMethods
     ) async throws -> T {
-        var req = URLRequest(url: url)
-        
-        req.httpMethod = method.rawValue
-        req.setValue(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)
-        
-        if let encodableModel = encodableModel {
-            req.httpBody = try? JSONEncoder().encode(encodableModel)
-        }
-        
-        if let authMode = authMode {
-            switch authMode {
-            case .base(email: let email, password: let password):
-                req.setValue(
-                    Headers.authorization.rawValue,
-                    forHTTPHeaderField: Headers.authString(email: email, password: password) ?? ""
-                )
-            case .bearer(value: let value):
-                req.setValue(Headers.authorization.rawValue, forHTTPHeaderField: Headers.bearerAuthString(token: value))
-            }
-        }
-        
-        let (data, response) = try await URLSession.shared.data(for: req)
-        
-        if let httpURLResponse = response as? HTTPURLResponse {
-            guard httpURLResponse.statusCode == 200 else {
+        switch method {
+        case .GET:
+            let response = try await request.client.get(
+                .init(string: url.absoluteString),
+                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
+                beforeSend: { clientReq in
+                    if let authMode {
+                        switch authMode {
+                        case .base(email: let email, password: let password):
+                            clientReq.headers.basicAuthorization = .init(username: email, password: password)
+                        case .bearer(value: let value):
+                            clientReq.headers.bearerAuthorization = .init(token: value)
+                        }
+                    }
+                    
+                    guard let encodableModel else {
+                        return
+                    }
+                    
+                    try clientReq.content.encode(encodableModel, using: JSONEncoder())
+                }
+            )
+            
+            guard response.status.code == 200 else {
                 throw Abort(.badRequest)
             }
+            
+            guard let buffer = response.body else {
+                throw Abort(.notFound)
+            }
+            
+            return try JSONDecoder().decode(T.self, from: .init(buffer: buffer))
+        case .PUT:
+            let response = try await request.client.put(
+                .init(string: url.absoluteString),
+                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
+                beforeSend: { clientReq in
+                    if let authMode {
+                        switch authMode {
+                        case .base(email: let email, password: let password):
+                            clientReq.headers.basicAuthorization = .init(username: email, password: password)
+                        case .bearer(value: let value):
+                            clientReq.headers.bearerAuthorization = .init(token: value)
+                        }
+                    }
+                    
+                    guard let encodableModel else {
+                        return
+                    }
+                    
+                    try clientReq.content.encode(encodableModel, using: JSONEncoder())
+                }
+            )
+            
+            guard response.status.code == 200 else {
+                throw Abort(.badRequest)
+            }
+            
+            guard let buffer = response.body else {
+                throw Abort(.notFound)
+            }
+            
+            return try JSONDecoder().decode(T.self, from: .init(buffer: buffer))
+        case .POST:
+            let response = try await request.client.post(
+                .init(string: url.absoluteString),
+                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
+                beforeSend: { clientReq in
+                    if let authMode {
+                        switch authMode {
+                        case .base(email: let email, password: let password):
+                            clientReq.headers.basicAuthorization = .init(username: email, password: password)
+                        case .bearer(value: let value):
+                            clientReq.headers.bearerAuthorization = .init(token: value)
+                        }
+                    }
+                    
+                    guard let encodableModel else {
+                        return
+                    }
+                    
+                    try clientReq.content.encode(encodableModel, using: JSONEncoder())
+                }
+            )
+            
+            guard response.status.code == 200 else {
+                throw Abort(.badRequest)
+            }
+            
+            guard let buffer = response.body else {
+                throw Abort(.notFound)
+            }
+            
+            return try JSONDecoder().decode(T.self, from: .init(buffer: buffer))
+        case .DELETE:
+            let response = try await request.client.delete(
+                .init(string: url.absoluteString),
+                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
+                beforeSend: { clientReq in
+                    if let authMode {
+                        switch authMode {
+                        case .base(email: let email, password: let password):
+                            clientReq.headers.basicAuthorization = .init(username: email, password: password)
+                        case .bearer(value: let value):
+                            clientReq.headers.bearerAuthorization = .init(token: value)
+                        }
+                    }
+                    
+                    guard let encodableModel else {
+                        return
+                    }
+                    
+                    try clientReq.content.encode(encodableModel, using: JSONEncoder())
+                }
+            )
+            
+            guard response.status.code == 200 else {
+                throw Abort(.badRequest)
+            }
+            
+            guard let buffer = response.body else {
+                throw Abort(.notFound)
+            }
+            
+            return try JSONDecoder().decode(T.self, from: .init(buffer: buffer))
         }
-        
-        return try JSONDecoder().decode(T.self, from: data)
     }
     
-//    MARK: Request 2
+//    MARK: - Request 2
     static func request(
+        _ request: Request,
         url: URL,
         encodableModel: Encodable? = nil,
         authMode: HTTPAuthentaficationMode? = nil,
         method: HTTPMethods
     ) async throws {
-        var req = URLRequest(url: url)
-        
-        req.httpMethod = method.rawValue
-        req.setValue(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)
-        
-        if let encodableModel = encodableModel {
-            req.httpBody = try? JSONEncoder().encode(encodableModel)
-        }
-        
-        if let authMode = authMode {
-            switch authMode {
-            case .base(email: let email, password: let password):
-                req.setValue(
-                    Headers.authorization.rawValue,
-                    forHTTPHeaderField: Headers.authString(email: email, password: password) ?? ""
-                )
-            case .bearer(value: let value):
-                req.setValue(Headers.authorization.rawValue, forHTTPHeaderField: Headers.bearerAuthString(token: value))
+        switch method {
+        case .GET:
+            let response = try await request.client.get(
+                .init(string: url.absoluteString),
+                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
+                beforeSend: { clientReq in
+                    if let authMode {
+                        switch authMode {
+                        case .base(email: let email, password: let password):
+                            clientReq.headers.basicAuthorization = .init(username: email, password: password)
+                        case .bearer(value: let value):
+                            clientReq.headers.bearerAuthorization = .init(token: value)
+                        }
+                    }
+                    
+                    guard let encodableModel else {
+                        return
+                    }
+                    
+                    try clientReq.content.encode(encodableModel, using: JSONEncoder())
+                }
+            )
+            
+            guard response.status.code == 200 else {
+                throw Abort(.badRequest)
             }
-        }
-        
-        let (_, response) = try await URLSession.shared.data(for: req)
-        
-        if let httpURLResponse = response as? HTTPURLResponse {
-            guard httpURLResponse.statusCode == 200 else {
+        case .PUT:
+            let response = try await request.client.put(
+                .init(string: url.absoluteString),
+                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
+                beforeSend: { clientReq in
+                    if let authMode {
+                        switch authMode {
+                        case .base(email: let email, password: let password):
+                            clientReq.headers.basicAuthorization = .init(username: email, password: password)
+                        case .bearer(value: let value):
+                            clientReq.headers.bearerAuthorization = .init(token: value)
+                        }
+                    }
+                    
+                    guard let encodableModel else {
+                        return
+                    }
+                    
+                    try clientReq.content.encode(encodableModel, using: JSONEncoder())
+                }
+            )
+            
+            guard response.status.code == 200 else {
+                throw Abort(.badRequest)
+            }
+        case .POST:
+            let response = try await request.client.post(
+                .init(string: url.absoluteString),
+                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
+                beforeSend: { clientReq in
+                    if let authMode {
+                        switch authMode {
+                        case .base(email: let email, password: let password):
+                            clientReq.headers.basicAuthorization = .init(username: email, password: password)
+                        case .bearer(value: let value):
+                            clientReq.headers.bearerAuthorization = .init(token: value)
+                        }
+                    }
+                    
+                    guard let encodableModel else {
+                        return
+                    }
+                    
+                    try clientReq.content.encode(encodableModel, using: JSONEncoder())
+                }
+            )
+            
+            guard response.status.code == 200 else {
+                throw Abort(.badRequest)
+            }
+            
+        case .DELETE:
+            let response = try await request.client.delete(
+                .init(string: url.absoluteString),
+                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
+                beforeSend: { clientReq in
+                    if let authMode {
+                        switch authMode {
+                        case .base(email: let email, password: let password):
+                            clientReq.headers.basicAuthorization = .init(username: email, password: password)
+                        case .bearer(value: let value):
+                            clientReq.headers.bearerAuthorization = .init(token: value)
+                        }
+                    }
+                    
+                    guard let encodableModel else {
+                        return
+                    }
+                    
+                    try clientReq.content.encode(encodableModel, using: JSONEncoder())
+                }
+            )
+            
+            guard response.status.code == 200 else {
                 throw Abort(.badRequest)
             }
         }
     }
     
-//    MARK: Request 3
+//    MARK: - Request 3
     static func request(
+        _ request: Request,
         url: URL,
         encodableModel: Encodable? = nil,
         authMode: HTTPAuthentaficationMode? = nil,
         method: HTTPMethods
     ) async throws -> Data {
-        var req = URLRequest(url: url)
-        
-        req.httpMethod = method.rawValue
-        req.setValue(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)
-        
-        if let encodableModel = encodableModel {
-            req.httpBody = try? JSONEncoder().encode(encodableModel)
-        }
-        
-        if let authMode = authMode {
-            switch authMode {
-            case .base(email: let email, password: let password):
-                req.setValue(
-                    Headers.authorization.rawValue,
-                    forHTTPHeaderField: Headers.authString(email: email, password: password) ?? ""
-                )
-            case .bearer(value: let value):
-                req.setValue(Headers.authorization.rawValue, forHTTPHeaderField: Headers.bearerAuthString(token: value))
-            }
-        }
-        
-        let (data, response) = try await URLSession.shared.data(for: req)
-        
-        if let httpURLResponse = response as? HTTPURLResponse {
-            guard httpURLResponse.statusCode == 200 else {
+        switch method {
+        case .GET:
+            let response = try await request.client.get(
+                .init(string: url.absoluteString),
+                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
+                beforeSend: { clientReq in
+                    if let authMode {
+                        switch authMode {
+                        case .base(email: let email, password: let password):
+                            clientReq.headers.basicAuthorization = .init(username: email, password: password)
+                        case .bearer(value: let value):
+                            clientReq.headers.bearerAuthorization = .init(token: value)
+                        }
+                    }
+                    
+                    guard let encodableModel else {
+                        return
+                    }
+                    
+                    try clientReq.content.encode(encodableModel, using: JSONEncoder())
+                }
+            )
+            
+            guard response.status.code == 200 else {
                 throw Abort(.badRequest)
             }
+            
+            guard let buffer = response.body else {
+                throw Abort(.notFound)
+            }
+            
+            return .init(buffer: buffer)
+        case .PUT:
+            let response = try await request.client.put(
+                .init(string: url.absoluteString),
+                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
+                beforeSend: { clientReq in
+                    if let authMode {
+                        switch authMode {
+                        case .base(email: let email, password: let password):
+                            clientReq.headers.basicAuthorization = .init(username: email, password: password)
+                        case .bearer(value: let value):
+                            clientReq.headers.bearerAuthorization = .init(token: value)
+                        }
+                    }
+                    
+                    guard let encodableModel else {
+                        return
+                    }
+                    
+                    try clientReq.content.encode(encodableModel, using: JSONEncoder())
+                }
+            )
+            
+            guard response.status.code == 200 else {
+                throw Abort(.badRequest)
+            }
+            
+            guard let buffer = response.body else {
+                throw Abort(.notFound)
+            }
+            
+            return .init(buffer: buffer)
+        case .POST:
+            let response = try await request.client.post(
+                .init(string: url.absoluteString),
+                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
+                beforeSend: { clientReq in
+                    if let authMode {
+                        switch authMode {
+                        case .base(email: let email, password: let password):
+                            clientReq.headers.basicAuthorization = .init(username: email, password: password)
+                        case .bearer(value: let value):
+                            clientReq.headers.bearerAuthorization = .init(token: value)
+                        }
+                    }
+                    
+                    guard let encodableModel else {
+                        return
+                    }
+                    
+                    try clientReq.content.encode(encodableModel, using: JSONEncoder())
+                }
+            )
+            
+            guard response.status.code == 200 else {
+                throw Abort(.badRequest)
+            }
+            
+            guard let buffer = response.body else {
+                throw Abort(.notFound)
+            }
+            
+            return .init(buffer: buffer)
+        case .DELETE:
+            let response = try await request.client.delete(
+                .init(string: url.absoluteString),
+                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
+                beforeSend: { clientReq in
+                    if let authMode {
+                        switch authMode {
+                        case .base(email: let email, password: let password):
+                            clientReq.headers.basicAuthorization = .init(username: email, password: password)
+                        case .bearer(value: let value):
+                            clientReq.headers.bearerAuthorization = .init(token: value)
+                        }
+                    }
+                    
+                    guard let encodableModel else {
+                        return
+                    }
+                    
+                    try clientReq.content.encode(encodableModel, using: JSONEncoder())
+                }
+            )
+            
+            guard response.status.code == 200 else {
+                throw Abort(.badRequest)
+            }
+            
+            guard let buffer = response.body else {
+                throw Abort(.notFound)
+            }
+            
+            return .init(buffer: buffer)
         }
-        
-        return data
     }
         
-//    MARK: Request 4
+//    MARK: - Request 4
     static func request(
+        _ request: Request,
         url: URL,
         bodyData: Data? = nil,
         authMode: HTTPAuthentaficationMode? = nil,
         method: HTTPMethods
     ) async throws {
-        var req = URLRequest(url: url)
-        
-        req.httpMethod = method.rawValue
-        req.setValue(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)
-        req.httpBody = bodyData
-        
-        if let authMode = authMode {
-            switch authMode {
-            case .base(email: let email, password: let password):
-                req.setValue(
-                    Headers.authorization.rawValue,
-                    forHTTPHeaderField: Headers.authString(email: email, password: password) ?? ""
-                )
-            case .bearer(value: let value):
-                req.setValue(Headers.authorization.rawValue, forHTTPHeaderField: Headers.bearerAuthString(token: value))
+        switch method {
+        case .GET:
+            let response = try await request.client.get(
+                .init(string: url.absoluteString),
+                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
+                beforeSend: { clientReq in
+                    if let authMode {
+                        switch authMode {
+                        case .base(email: let email, password: let password):
+                            clientReq.headers.basicAuthorization = .init(username: email, password: password)
+                        case .bearer(value: let value):
+                            clientReq.headers.bearerAuthorization = .init(token: value)
+                        }
+                    }
+                    
+                    guard let bodyData else {
+                        return
+                    }
+                    
+                    try clientReq.content.encode(bodyData, as: .formData)
+                }
+            )
+            
+            guard response.status.code == 200 else {
+                throw Abort(.badRequest)
             }
-        }
-        
-        let (_, response) = try await URLSession.shared.data(for: req)
-        
-        if let httpURLResponse = response as? HTTPURLResponse {
-            guard httpURLResponse.statusCode == 200 else {
+        case .PUT:
+            let response = try await request.client.put(
+                .init(string: url.absoluteString),
+                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
+                beforeSend: { clientReq in
+                    if let authMode {
+                        switch authMode {
+                        case .base(email: let email, password: let password):
+                            clientReq.headers.basicAuthorization = .init(username: email, password: password)
+                        case .bearer(value: let value):
+                            clientReq.headers.bearerAuthorization = .init(token: value)
+                        }
+                    }
+                    
+                    guard let bodyData else {
+                        return
+                    }
+                    
+                    try clientReq.content.encode(bodyData, as: .formData)
+                }
+            )
+            
+            guard response.status.code == 200 else {
+                throw Abort(.badRequest)
+            }
+        case .POST:
+            let response = try await request.client.post(
+                .init(string: url.absoluteString),
+                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
+                beforeSend: { clientReq in
+                    if let authMode {
+                        switch authMode {
+                        case .base(email: let email, password: let password):
+                            clientReq.headers.basicAuthorization = .init(username: email, password: password)
+                        case .bearer(value: let value):
+                            clientReq.headers.bearerAuthorization = .init(token: value)
+                        }
+                    }
+                    
+                    guard let bodyData else {
+                        return
+                    }
+                    
+                    try clientReq.content.encode(bodyData, as: .formData)
+                }
+            )
+            
+            guard response.status.code == 200 else {
+                throw Abort(.badRequest)
+            }
+            
+        case .DELETE:
+            let response = try await request.client.delete(
+                .init(string: url.absoluteString),
+                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
+                beforeSend: { clientReq in
+                    if let authMode {
+                        switch authMode {
+                        case .base(email: let email, password: let password):
+                            clientReq.headers.basicAuthorization = .init(username: email, password: password)
+                        case .bearer(value: let value):
+                            clientReq.headers.bearerAuthorization = .init(token: value)
+                        }
+                    }
+                    
+                    guard let bodyData else {
+                        return
+                    }
+                    
+                    try clientReq.content.encode(bodyData, as: .formData)
+                }
+            )
+            
+            guard response.status.code == 200 else {
                 throw Abort(.badRequest)
             }
         }
     }
     
-//    MARK: Request 5
+//    MARK: - Request 5
     static func request(
+        _ request: Request,
         url: URL,
         bodyData: Data? = nil,
         authMode: HTTPAuthentaficationMode? = nil,
         method: HTTPMethods
     ) async throws -> Data {
-        var req = URLRequest(url: url)
-        
-        req.httpMethod = method.rawValue
-        req.setValue(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)
-        req.httpBody = bodyData
-        
-        if let authMode = authMode {
-            switch authMode {
-            case .base(email: let email, password: let password):
-                req.setValue(
-                    Headers.authorization.rawValue,
-                    forHTTPHeaderField: Headers.authString(email: email, password: password) ?? ""
-                )
-            case .bearer(value: let value):
-                req.setValue(Headers.authorization.rawValue, forHTTPHeaderField: Headers.bearerAuthString(token: value))
-            }
-        }
-        
-        let (data, response) = try await URLSession.shared.data(for: req)
-        
-        if let httpURLResponse = response as? HTTPURLResponse {
-            guard httpURLResponse.statusCode == 200 else {
+        switch method {
+        case .GET:
+            let response = try await request.client.get(
+                .init(string: url.absoluteString),
+                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
+                beforeSend: { clientReq in
+                    if let authMode {
+                        switch authMode {
+                        case .base(email: let email, password: let password):
+                            clientReq.headers.basicAuthorization = .init(username: email, password: password)
+                        case .bearer(value: let value):
+                            clientReq.headers.bearerAuthorization = .init(token: value)
+                        }
+                    }
+                    
+                    guard let bodyData else {
+                        return
+                    }
+                    
+                    try clientReq.content.encode(bodyData, as: .formData)
+                }
+            )
+            
+            guard response.status.code == 200 else {
                 throw Abort(.badRequest)
             }
+            
+            guard let buffer = response.body else {
+                throw Abort(.notFound)
+            }
+            
+            return .init(buffer: buffer)
+        case .PUT:
+            let response = try await request.client.put(
+                .init(string: url.absoluteString),
+                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
+                beforeSend: { clientReq in
+                    if let authMode {
+                        switch authMode {
+                        case .base(email: let email, password: let password):
+                            clientReq.headers.basicAuthorization = .init(username: email, password: password)
+                        case .bearer(value: let value):
+                            clientReq.headers.bearerAuthorization = .init(token: value)
+                        }
+                    }
+                    
+                    guard let bodyData else {
+                        return
+                    }
+                    
+                    try clientReq.content.encode(bodyData, as: .formData)
+                }
+            )
+            
+            guard response.status.code == 200 else {
+                throw Abort(.badRequest)
+            }
+            
+            guard let buffer = response.body else {
+                throw Abort(.notFound)
+            }
+            
+            return .init(buffer: buffer)
+        case .POST:
+            let response = try await request.client.post(
+                .init(string: url.absoluteString),
+                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
+                beforeSend: { clientReq in
+                    if let authMode {
+                        switch authMode {
+                        case .base(email: let email, password: let password):
+                            clientReq.headers.basicAuthorization = .init(username: email, password: password)
+                        case .bearer(value: let value):
+                            clientReq.headers.bearerAuthorization = .init(token: value)
+                        }
+                    }
+                    
+                    guard let bodyData else {
+                        return
+                    }
+                    
+                    try clientReq.content.encode(bodyData, as: .formData)
+                }
+            )
+            
+            guard response.status.code == 200 else {
+                throw Abort(.badRequest)
+            }
+            
+            guard let buffer = response.body else {
+                throw Abort(.notFound)
+            }
+            
+            return .init(buffer: buffer)
+        case .DELETE:
+            let response = try await request.client.delete(
+                .init(string: url.absoluteString),
+                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
+                beforeSend: { clientReq in
+                    if let authMode {
+                        switch authMode {
+                        case .base(email: let email, password: let password):
+                            clientReq.headers.basicAuthorization = .init(username: email, password: password)
+                        case .bearer(value: let value):
+                            clientReq.headers.bearerAuthorization = .init(token: value)
+                        }
+                    }
+                    
+                    guard let bodyData else {
+                        return
+                    }
+                    
+                    try clientReq.content.encode(bodyData, as: .formData)
+                }
+            )
+            
+            guard response.status.code == 200 else {
+                throw Abort(.badRequest)
+            }
+            
+            guard let buffer = response.body else {
+                throw Abort(.notFound)
+            }
+            
+            return .init(buffer: buffer)
         }
-        
-        return data
     }
     
 }
