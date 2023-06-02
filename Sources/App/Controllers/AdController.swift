@@ -58,8 +58,7 @@ struct AdController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    score: .zero,
-                    isPremiumUser: cattery?.isPremiumUser ?? false
+                    score: .zero
                 )
             ))
         }
@@ -96,8 +95,7 @@ struct AdController: RouteCollection {
                 myOffers: [Offer.Output](),
                 offers: [Offer.Output](),
                 chatRooms: [ChatRoom.Output](),
-                score: .zero,
-                isPremiumUser: cattery?.isPremiumUser ?? false
+                score: .zero
             )
         )
     }
@@ -135,8 +133,7 @@ struct AdController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    score: .zero,
-                    isPremiumUser: cattery?.isPremiumUser ?? false
+                    score: .zero
                 )
             ))
         }
@@ -239,8 +236,8 @@ struct AdController: RouteCollection {
             throw Abort(.notFound)
         }
         
+        try? await FileManager.set(req: req, with: ad.contentPath, data: .init())
         try await ad.delete(on: req.db)
-        try await FileManager.set(req: req, with: ad.contentPath, data: .init())
         
         return .ok
     }

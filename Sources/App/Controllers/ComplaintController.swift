@@ -86,8 +86,7 @@ struct ComplaintController: RouteCollection {
                         myOffers: .init(),
                         offers: .init(),
                         chatRooms: .init(),
-                        score: .zero,
-                        isPremiumUser: user.isPremiumUser
+                        score: .zero
                     ),
                     country: deal.country,
                     city: deal.city,
@@ -115,8 +114,7 @@ struct ComplaintController: RouteCollection {
                     myOffers: .init(),
                     offers: .init(),
                     chatRooms: .init(),
-                    score: .zero,
-                    isPremiumUser: user.isPremiumUser
+                    score: .zero
                 )
             }
             
@@ -137,8 +135,7 @@ struct ComplaintController: RouteCollection {
                     myOffers: .init(),
                     offers: .init(),
                     chatRooms: .init(),
-                    score: .zero,
-                    isPremiumUser: sender.isPremiumUser
+                    score: .zero
                 ),
                 createdAt: complaint.createdAt,
                 deal: dealOutput,
@@ -212,8 +209,7 @@ struct ComplaintController: RouteCollection {
                     myOffers: .init(),
                     offers: .init(),
                     chatRooms: .init(),
-                    score: .zero,
-                    isPremiumUser: user.isPremiumUser
+                    score: .zero
                 ),
                 country: deal.country,
                 city: deal.city,
@@ -241,8 +237,7 @@ struct ComplaintController: RouteCollection {
                 myOffers: .init(),
                 offers: .init(),
                 chatRooms: .init(),
-                score: .zero,
-                isPremiumUser: user.isPremiumUser
+                score: .zero
             )
         }
         
@@ -263,8 +258,7 @@ struct ComplaintController: RouteCollection {
                 myOffers: .init(),
                 offers: .init(),
                 chatRooms: .init(),
-                score: .zero,
-                isPremiumUser: sender.isPremiumUser
+                score: .zero
             ),
             createdAt: complaint.createdAt,
             deal: dealOutput,
@@ -273,7 +267,8 @@ struct ComplaintController: RouteCollection {
     }
     
     private func create(req: Request) async throws -> HTTPStatus {
-        _ = try req.auth.require(User.self)
+        try req.auth.require(User.self)
+        
         let input = try req.content.decode(Complaint.Input.self)
         
         try await Complaint(text: input.text, senderID: input.senderID, dealID: input.dealID, userID: input.userID).save(on: req.db)

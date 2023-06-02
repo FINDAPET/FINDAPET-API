@@ -22,7 +22,8 @@ struct NotificationScreenController: RouteCollection {
     }
     
     private func index(req: Request) async throws -> [NotificationScreen.Output] {
-        _ = try req.auth.require(User.self)
+        try req.auth.require(User.self)
+        
         var outputs = [NotificationScreen.Output]()
         
         guard let countryCode = req.parameters.get("countryCode") else {
@@ -128,8 +129,8 @@ struct NotificationScreenController: RouteCollection {
             throw Abort(.notFound)
         }
         
-        try await notificationScreen.delete(on: req.db)
         try await FileManager.set(req: req, with: notificationScreen.backgroundImagePath, data: .init())
+        try await notificationScreen.delete(on: req.db)
         
         return .ok
     }

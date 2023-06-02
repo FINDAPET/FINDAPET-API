@@ -90,8 +90,7 @@ struct DealController: RouteCollection {
                         myOffers: .init(),
                         offers: .init(),
                         chatRooms: .init(),
-                        score: .zero,
-                        isPremiumUser: .random()
+                        score: .zero
                     ),
                     buyer: deal.buyer != nil ? .init(
                         name: .init(),
@@ -101,8 +100,7 @@ struct DealController: RouteCollection {
                         myOffers: .init(),
                         offers: .init(),
                         chatRooms: .init(),
-                        score: .zero,
-                        isPremiumUser: .random()
+                        score: .zero
                     ) : nil,
                     offers: .init()
                 ))
@@ -128,12 +126,12 @@ struct DealController: RouteCollection {
                 isMale: deal.isMale,
                 birthDate: deal.birthDate,
                 color: deal.color,
-                price: .init(try await CurrencyConverter.convert(
+                price: deal.price != nil ? .init(try await CurrencyConverter.convert(
                     req,
                     from: deal.currencyName,
                     to: user.basicCurrencyName,
-                    amount: deal.price
-                ).result),
+                    amount: deal.price ?? .zero
+                ).result) : nil,
                 currencyName: user.basicCurrencyName,
                 score: deal.score,
                 cattery: .init(
@@ -147,11 +145,11 @@ struct DealController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    score: .zero,
-                    isPremiumUser: dealUser.isPremiumUser
+                    score: .zero
                 ),
                 country: deal.country,
                 city: deal.city,
+                description: deal.description,
                 buyer: nil,
                 offers: [Offer.Output]()
             ))
@@ -218,8 +216,7 @@ struct DealController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    score: .zero,
-                    isPremiumUser: offerBuyer.isPremiumUser
+                    score: .zero
                 ),
                 deal: Deal.Output(
                     id: deal.id,
@@ -241,12 +238,12 @@ struct DealController: RouteCollection {
                     isMale: deal.isMale,
                     birthDate: deal.birthDate,
                     color: deal.color,
-                    price: Double(try await CurrencyConverter.convert(
+                    price: deal.price != nil ? Double(try await CurrencyConverter.convert(
                         req,
                         from: deal.currencyName,
                         to: user.basicCurrencyName,
-                        amount: deal.price
-                    ).result),
+                        amount: deal.price ?? .zero
+                    ).result) : nil,
                     currencyName: user.basicCurrencyName,
                     score: deal.score,
                     cattery: User.Output(
@@ -261,8 +258,7 @@ struct DealController: RouteCollection {
                         myOffers: [Offer.Output](),
                         offers: [Offer.Output](),
                         chatRooms: [ChatRoom.Output](),
-                        score: .zero,
-                        isPremiumUser: cattery.isPremiumUser
+                        score: .zero
                     ),
                     country: deal.country,
                     city: deal.city,
@@ -279,8 +275,7 @@ struct DealController: RouteCollection {
                         myOffers: [Offer.Output](),
                         offers: [Offer.Output](),
                         chatRooms: [ChatRoom.Output](),
-                        score: .zero,
-                        isPremiumUser: buyer?.isPremiumUser ?? false
+                        score: .zero
                     ),
                     offers: [Offer.Output]()
                 ),
@@ -296,8 +291,7 @@ struct DealController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    score: .zero,
-                    isPremiumUser: cattery.isPremiumUser
+                    score: .zero
                 )
             ))
         }
@@ -325,12 +319,12 @@ struct DealController: RouteCollection {
             isMale: deal.isMale,
             birthDate: deal.birthDate,
             color: deal.color,
-            price: Double(try await CurrencyConverter.convert(
+            price: deal.price != nil ? Double(try await CurrencyConverter.convert(
                 req,
                 from: deal.currencyName,
                 to: user.basicCurrencyName,
-                amount: deal.price
-            ).result),
+                amount: deal.price ?? .zero
+            ).result) : nil,
             currencyName: user.basicCurrencyName,
             score: deal.score,
             cattery: User.Output(
@@ -345,8 +339,7 @@ struct DealController: RouteCollection {
                 myOffers: [Offer.Output](),
                 offers: [Offer.Output](),
                 chatRooms: [ChatRoom.Output](),
-                score: .zero,
-                isPremiumUser: cattery.isPremiumUser
+                score: .zero
             ),
             country: deal.country,
             city: deal.city,
@@ -363,8 +356,7 @@ struct DealController: RouteCollection {
                 myOffers: [Offer.Output](),
                 offers: [Offer.Output](),
                 chatRooms: [ChatRoom.Output](),
-                score: .zero,
-                isPremiumUser: buyer?.isPremiumUser ?? false
+                score: .zero
             ),
             offers: offersOutput
         )
@@ -375,7 +367,7 @@ struct DealController: RouteCollection {
     }
     
     private func sold(req: Request) async throws -> HTTPStatus {
-        _ = try req.auth.require(User.self)
+        try req.auth.require(User.self)
         
         guard let deal = try await Deal.find(req.parameters.get("dealID"), on: req.db),
               let offer = try await Offer.find(req.parameters.get("offerID"), on: req.db) else {
@@ -388,21 +380,67 @@ struct DealController: RouteCollection {
         deal.$buyer.id = buyer.id
         deal.isActive = false
         
-        cattery.score += 1 * (cattery.isPremiumUser ? 2 : 1)
+        cattery.score += 1 * (cattery.subscrtiption != nil ? 2 : 1)
         
         try await deal.save(on: req.db)
         try await cattery.save(on: req.db)
         
-        for deviceToken in buyer.deviceTokens {
-            _ = req.apns.send(.init(title: "You bought a pet"), to: deviceToken)
+        for deviceToken in (try? await buyer.$deviceTokens.get(on: req.db)) ?? .init() {
+            switch Platform.get(deviceToken.platform) {
+            case .iOS:
+                do {
+                    req.apns.send(
+                        .init(title: try LocalizationManager.main.get(buyer.countryCode, .youBoughtAPet)),
+                        to: deviceToken.value
+                    ).whenComplete {
+                        switch $0 {
+                        case .success():
+                            print("❕NOTIFICATION: push notification is sent.")
+                        case .failure(let error):
+                            print("❌ ERROR: \(error.localizedDescription)")
+                        }
+                    }
+                } catch {
+                    print("❌ ERROR: \(error.localizedDescription)")
+                }
+            case .Android:
+//                full version
+                continue
+            case .custom(_):
+//                full version
+                continue
+            }
         }
         
         for deleteOffer in try await deal.$offers.get(on: req.db) {
             if deleteOffer.id != offer.id {
                 try? await deleteOffer.delete(on: req.db)
                 
-                for deviceToken in deleteOffer.buyer.deviceTokens {
-                    _ = req.apns.send(.init(title: "Your offer is rejected"), to: deviceToken)
+                for deviceToken in (try? await deleteOffer.buyer.$deviceTokens.get(on: req.db)) ?? .init() {
+                    switch Platform.get(deviceToken.platform) {
+                    case .iOS:
+                        do {
+                            req.apns.send(
+                                .init(title: try LocalizationManager.main.get(buyer.countryCode, .yourOfferIsRejected)),
+                                to: deviceToken.value
+                            ).whenComplete {
+                                switch $0 {
+                                case .success():
+                                    print("❕NOTIFICATION: push notification is sent.")
+                                case .failure(let error):
+                                    print("❌ ERROR: \(error.localizedDescription)")
+                                }
+                            }
+                        } catch {
+                            print("❌ ERROR: \(error.localizedDescription)")
+                        }
+                    case .Android:
+//                full version
+                        continue
+                    case .custom(_):
+//                full version
+                        continue
+                    }
                 }
             }
         }
@@ -433,12 +471,14 @@ struct DealController: RouteCollection {
             tags += "#\(tag)"
         }
         
+        let sub = try? await user.$subscrtiption.get(on: req.db)
+        
         try await Deal(
             id: deal.id,
             title: deal.title,
             photoPaths: photoPaths,
             tags: tags,
-            isPremiumDeal: deal.isPremiumDeal || user.isPremiumUser,
+            isPremiumDeal: deal.isPremiumDeal || sub != nil,
             isActive: deal.isActive,
             mode: deal.mode.rawValue,
             petTypeID: deal.petTypeID,
@@ -450,11 +490,10 @@ struct DealController: RouteCollection {
             price: deal.price,
             catteryID: deal.catteryID,
             currencyName: deal.currencyName.rawValue,
-            score: user.score * (deal.isPremiumDeal || user.isPremiumUser ? 2 : 1),
+            score: user.score * (deal.isPremiumDeal || sub != nil ? 2 : 1),
             country: deal.country,
             city: deal.city,
-            description: deal.description,
-            buyerID: deal.buyerID
+            description: deal.description
         ).save(on: req.db)
         
         return .ok
@@ -491,12 +530,14 @@ struct DealController: RouteCollection {
             tags += "#\(tag)"
         }
         
-        oldDeal.isPremiumDeal = oldDeal.isPremiumDeal || user.isPremiumUser || newDeal.isPremiumDeal
+        let sub = try? await user.$subscrtiption.get(on: req.db)
+        
+        oldDeal.isPremiumDeal = oldDeal.isPremiumDeal || sub != nil || newDeal.isPremiumDeal
         oldDeal.city = newDeal.city
         oldDeal.country = newDeal.country
         oldDeal.price = newDeal.price
         oldDeal.currencyName = newDeal.currencyName.rawValue
-        oldDeal.score = user.score * (oldDeal.isPremiumDeal || user.isPremiumUser ? 2 : 1)
+        oldDeal.score = user.score * (oldDeal.isPremiumDeal || sub != nil ? 2 : 1)
         oldDeal.birthDate = ISO8601DateFormatter().date(from: newDeal.birthDate) ?? .init()
         oldDeal.isMale = newDeal.isMale
         oldDeal.petClass = newDeal.petClass.rawValue
@@ -583,11 +624,11 @@ struct DealController: RouteCollection {
             throw Abort(.badRequest)
         }
         
-        try await deal.delete(on: req.db)
-        
         for photoPath in deal.photoPaths {
-            try await FileManager.set(req: req, with: photoPath, data: .init())
+            try? await FileManager.set(req: req, with: photoPath, data: .init())
         }
+        
+        try await deal.delete(on: req.db)
         
         return .ok
     }
@@ -598,11 +639,11 @@ struct DealController: RouteCollection {
         deals = deals.filter(\.$isActive == true).filter(\.$id !~ checkedIDs)
         
         if let petTypeID = filter?.petTypeID {
-            deals = deals.filter(\.$petType.$id == .bind(petTypeID.uuidString.lowercased()))
+            deals = deals.filter(\.$petType.$id == petTypeID)
         }
         
         if let petBreedID = filter?.petBreedID {
-            deals = deals.filter(\.$petBreed.$id == .bind(petBreedID.uuidString.lowercased()))
+            deals = deals.filter(\.$petBreed.$id == petBreedID)
         }
         
         if let petClass = filter?.petClass, petClass != .allClass {

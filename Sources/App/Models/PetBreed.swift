@@ -11,7 +11,7 @@ import Fluent
 
 final class PetBreed: Model, Content {
     
-    static let schema = "pet breeds"
+    static let schema = "pet_breeds"
     
     @ID(key: .id)
     var id: UUID?

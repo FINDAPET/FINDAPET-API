@@ -22,7 +22,8 @@ struct PetTypeController: RouteCollection {
     }
     
     private func index(req: Request) async throws -> [PetType.Output] {
-        _ = try req.auth.require(User.self)
+        try req.auth.require(User.self)
+        
         let petTypes = try await PetType.query(on: req.db).all()
         var output = [PetType.Output]()
         
@@ -43,7 +44,7 @@ struct PetTypeController: RouteCollection {
     }
     
     private func petType(req: Request) async throws -> PetType.Output {
-        _ = try req.auth.require(User.self)
+        try req.auth.require(User.self)
         
         guard let petType = try await PetType.find(req.parameters.get("petTypeID"), on: req.db),
               let data = try await FileManager.get(req: req, with: petType.imagePath) else {
@@ -100,6 +101,7 @@ struct PetTypeController: RouteCollection {
             throw Abort(.notFound)
         }
         
+        try await FileManager.set(req: req, with: petType.imagePath, data: .init())
         try await petType.delete(on: req.db)
         
         return .ok

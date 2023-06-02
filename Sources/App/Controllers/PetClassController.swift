@@ -18,7 +18,7 @@ struct PetClassController: RouteCollection {
     }
     
     private func index(req: Request) throws -> [String] {
-        _ = try req.auth.require(User.self)
+        try req.auth.require(User.self)
         
         return PetClass.allCases.map { $0.rawValue }
     }

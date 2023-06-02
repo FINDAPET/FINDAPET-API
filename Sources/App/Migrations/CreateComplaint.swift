@@ -14,10 +14,10 @@ struct CreateComplaint: AsyncMigration {
         try await database.schema(Complaint.schema)
             .id()
             .field("text", .string, .required)
-            .field("sender_id", .uuid, .required)
+            .field("sender_id", .uuid, .required, .references(User.schema, .id))
             .field("created_at", .date)
-            .field("deal_id", .uuid, .references(Deal.schema, "id"))
-            .field("user_id", .uuid, .references(User.schema, "id"))
+            .field("deal_id", .uuid, .references(Deal.schema, .id))
+            .field("user_id", .uuid, .references(User.schema, .id))
             .create()
     }
     

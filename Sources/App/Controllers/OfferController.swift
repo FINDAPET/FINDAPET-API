@@ -67,8 +67,7 @@ struct OfferController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    score: .zero,
-                    isPremiumUser: buyer.isPremiumUser
+                    score: .zero
                 ),
                 deal: Deal.Output(
                     id: deal.id,
@@ -90,12 +89,12 @@ struct OfferController: RouteCollection {
                     isMale: deal.isMale,
                     birthDate: deal.birthDate,
                     color: deal.color,
-                    price: Double(try await CurrencyConverter.convert(
+                    price: deal.price != nil ? Double(try await CurrencyConverter.convert(
                         req,
                         from: deal.currencyName,
                         to: user.basicCurrencyName,
-                        amount: deal.price
-                    ).result),
+                        amount: deal.price ?? .zero
+                    ).result) : nil,
                     currencyName: user.basicCurrencyName,
                     score: deal.score,
                     cattery: User.Output(
@@ -106,8 +105,7 @@ struct OfferController: RouteCollection {
                         myOffers: [Offer.Output](),
                         offers: [Offer.Output](),
                         chatRooms: [ChatRoom.Output](),
-                        score: .zero,
-                        isPremiumUser: user.isPremiumUser
+                        score: .zero
                     ),
                     country: deal.country,
                     city: deal.city,
@@ -127,8 +125,7 @@ struct OfferController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    score: .zero,
-                    isPremiumUser: cattery.isPremiumUser
+                    score: .zero
                 )
             ))
         }
@@ -145,10 +142,7 @@ struct OfferController: RouteCollection {
             throw Abort(.badRequest)
         }
         
-        guard let deviceTokens = try await User.find(offerInput.catteryID, on: req.db)?.deviceTokens,
-              !deviceTokens.isEmpty else {
-            throw Abort(.notFound)
-        }
+        guard let cattery = try await User.find(offerInput.catteryID, on: req.db) else { throw Abort(.notFound) }
         
         try await Offer(
             buyerID: offerInput.buyerID,
@@ -158,15 +152,38 @@ struct OfferController: RouteCollection {
             currencyName: offerInput.currencyName.rawValue
         ).save(on: req.db)
         
-        for deviceToken in deviceTokens {
-            _ = req.apns.send(.init(title: "You have a new offer"), to: deviceToken)
+        for deviceToken in (try? await cattery.$deviceTokens.get(on: req.db)) ?? .init() {
+            switch Platform.get(deviceToken.platform) {
+            case .iOS:
+                do {
+                    req.apns.send(
+                        .init(title: try LocalizationManager.main.get(cattery.countryCode, .youHaveANewOffer)),
+                        to: deviceToken.value
+                    ).whenComplete {
+                        switch $0 {
+                        case .success():
+                            print("❕NOTIFICATION: push notification is sent.")
+                        case .failure(let error):
+                            print("❌ ERROR: \(error.localizedDescription)")
+                        }
+                    }
+                } catch {
+                    print("❌ ERROR: \(error.localizedDescription)")
+                }
+            case .Android:
+//                    full version
+                continue
+            case .custom(_):
+//                    full version
+                continue
+            }
         }
         
         return .ok
     }
     
     private func delete(req: Request) async throws -> HTTPStatus {
-        _ = try req.auth.require(User.self)
+        try req.auth.require(User.self)
         
         guard let offer = try await Offer.find(req.parameters.get("offerID"), on: req.db) else {
             throw Abort(.notFound)

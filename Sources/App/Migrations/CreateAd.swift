@@ -17,7 +17,7 @@ struct CreateAd: AsyncMigration {
             .field("is_active", .bool)
             .field("customer_name", .string)
             .field("link", .string)
-            .field("cattery_id", .uuid, .references(User.schema, "id"))
+            .field("cattery_id", .uuid, .references(User.schema, .id))
             .create()
     }
     

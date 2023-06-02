@@ -21,28 +21,28 @@ struct UserTokenController: RouteCollection {
     }
     
     private func auth(req: Request) async throws -> UserToken.Output {
-        let id = UUID(uuidString: req.parameters.get("deviceToken") ?? .init())
+        guard let id = req.parameters.get("deviceToken") else {
+            throw Abort(.badRequest)
+        }
+        
         let user = try req.auth.require(User.self)
         let token = try user.generateToken(deviceID: id)
         
-        if let id = id {
-            for token in (try? await UserToken.query(on: req.db).filter(\.$deviceID == id).all()) ?? .init() {
-                try await token.delete(on: req.db)
-            }
+        for token in (try? await UserToken.query(on: req.db).filter(\.$deviceID == id).all()) ?? .init() {
+            try? await token.delete(on: req.db)
         }
-        
+                
         try await token.save(on: req.db)
         
         return .init(id: token.id, value: token.value, user: user)
     }
     
     private func logOut(req: Request) async throws -> HTTPStatus {
-        guard let id = UUID(uuidString: req.parameters.get("deviceToken") ?? .init()),
-              let userID = try req.auth.require(User.self).id else {
-            throw Abort(.notFound)
+        guard let id = req.parameters.get("deviceToken") else {
+            throw Abort(.badRequest)
         }
                 
-        for token in try await UserToken.query(on: req.db).filter(\.$deviceID == id).filter(\.$user.$id == userID).all() {
+        for token in try await UserToken.query(on: req.db).filter(\.$deviceID == id).all() {
             try await token.delete(on: req.db)
         }
         

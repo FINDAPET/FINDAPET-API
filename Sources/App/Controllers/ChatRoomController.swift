@@ -62,8 +62,7 @@ struct ChatRoomController: RouteCollection {
                                 myOffers: [Offer.Output](),
                                 offers: [Offer.Output](),
                                 chatRooms: [ChatRoom.Output](),
-                                score: .zero,
-                                isPremiumUser: messageUser.isPremiumUser
+                                score: .zero
                             ),
                             createdAt: message.$createdAt.timestamp,
                             chatRoom: ChatRoom.Output(users: [User.Output](), messages: [Message.Output]())
@@ -89,8 +88,7 @@ struct ChatRoomController: RouteCollection {
                             myOffers: [Offer.Output](),
                             offers: [Offer.Output](),
                             chatRooms: [ChatRoom.Output](),
-                            score: .zero,
-                            isPremiumUser: chatUser.isPremiumUser
+                            score: .zero
                         ))
                     }
                 }
@@ -134,8 +132,7 @@ struct ChatRoomController: RouteCollection {
                         myOffers: [Offer.Output](),
                         offers: [Offer.Output](),
                         chatRooms: [ChatRoom.Output](),
-                        score: .zero,
-                        isPremiumUser: messageUser.isPremiumUser
+                        score: .zero
                     ),
                     createdAt: message.$createdAt.timestamp,
                     chatRoom: ChatRoom.Output(users: [User.Output](), messages: [Message.Output]())
@@ -161,8 +158,7 @@ struct ChatRoomController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    score: .zero,
-                    isPremiumUser: chatUser.isPremiumUser
+                    score: .zero
                 ))
             }
         }
@@ -203,8 +199,7 @@ struct ChatRoomController: RouteCollection {
                         myOffers: [Offer.Output](),
                         offers: [Offer.Output](),
                         chatRooms: [ChatRoom.Output](),
-                        score: .zero,
-                        isPremiumUser: messageUser.isPremiumUser
+                        score: .zero
                     ),
                     createdAt: message.$createdAt.timestamp,
                     chatRoom: ChatRoom.Output(users: [User.Output](), messages: [Message.Output]())
@@ -230,8 +225,7 @@ struct ChatRoomController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    score: .zero,
-                    isPremiumUser: chatUser.isPremiumUser
+                    score: .zero
                 ))
             }
         }
@@ -252,10 +246,7 @@ struct ChatRoomController: RouteCollection {
             id += userID.uuidString
         }
         
-        guard !id.isEmpty else {
-            throw Abort(.badRequest)
-        }
-        
+        guard !id.isEmpty else { throw Abort(.badRequest) }
         guard let secondUser = try await User.find(chatRoom.usersID.first { $0 != user.id }, on: req.db) else {
             throw Abort(.notFound)
         }
@@ -307,6 +298,10 @@ struct ChatRoomController: RouteCollection {
         }
         
         for message in try await chatRoom.$messages.get(on: req.db) {
+            if let bodyPath = message.bodyPath {
+                try? await FileManager.set(req: req, with: bodyPath, data: .init())
+            }
+            
             try? await message.delete(on: req.db)
         }
         
@@ -402,11 +397,38 @@ struct ChatRoomController: RouteCollection {
                 if ChatRoomWebSocketManager.shared.chatRoomWebSockets.first(where: {
                     $0.id == chatRoomID
                 })?.users.count ?? 2 < 2 {
-                    for deviceToken in firstUser.deviceTokens {
-                        _ = req.apns.send(
-                            .init(title: firstUser.name, subtitle: "Sent you a new message"),
-                            to: deviceToken
-                        )
+                    for deviceToken in (try? await firstUser.$deviceTokens.get(on: req.db)) ?? .init() {
+                        switch Platform.get(deviceToken.platform) {
+                        case .iOS:
+                            do {
+                                req.apns.send(
+                                    .init(
+                                        title: firstUser.name,
+                                        subtitle: try LocalizationManager.main.get(
+                                            firstUser.countryCode,
+                                            .sentYouANewMessage
+                                        )
+                                    ),
+                                    to: deviceToken.value
+                                )
+                                .whenComplete {
+                                    switch $0 {
+                                    case .success():
+                                        print("❕NOTIFICATION: push notification is sent.")
+                                    case .failure(let error):
+                                        print("❌ ERROR: \(error.localizedDescription)")
+                                    }
+                                }
+                            } catch {
+                                print("❌ ERROR: \(error.localizedDescription)")
+                            }
+                        case .Android:
+//                            full version
+                            continue
+                        case .custom(_):
+//                            full version
+                            continue
+                        }
                     }
                 } else {
                     for userWebSocket in ChatRoomWebSocketManager.shared.chatRoomWebSockets.first(where: {
@@ -434,8 +456,7 @@ struct ChatRoomController: RouteCollection {
                                     myOffers: .init(),
                                     offers: .init(),
                                     chatRooms: .init(),
-                                    score: .zero,
-                                    isPremiumUser: .random()
+                                    score: .zero
                                 ),
                                 createdAt: newMessage.createdAt,
                                 chatRoom: .init(id: input.chatRoomID, users: .init(), messages: .init())

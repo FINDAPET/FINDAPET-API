@@ -29,7 +29,7 @@ struct SearchTitleController: RouteCollection {
             throw Abort(.badRequest)
         }
                 
-        for title in try await SearchTitle.query(on: req.db).all() {
+        for title in try await SearchTitle.query(on: req.db).filter(SearchTitle.self, \.$title, .notEqual, String()).all() {
             outputs.append(.init(id: title.id, title: title.title, user: try await title.$user.get(on: req.db)))
         }
         
@@ -54,7 +54,7 @@ struct SearchTitleController: RouteCollection {
         let user = try req.auth.require(User.self)
         let searchTitle = try req.content.decode(SearchTitle.Input.self)
         
-        guard searchTitle.userID == user.id || user.isAdmin else {
+        guard searchTitle.userID == user.id || user.isAdmin, !searchTitle.title.isEmpty else {
             throw Abort(.badRequest)
         }
         

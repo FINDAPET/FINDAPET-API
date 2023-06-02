@@ -11,7 +11,7 @@ import Fluent
 
 final class Complaint: Model, Content {
     
-    static let schema = "Complaints"
+    static let schema = "complaints"
     
     @ID(key: .id)
     var id: UUID?
