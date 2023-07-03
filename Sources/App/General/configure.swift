@@ -82,7 +82,7 @@ public func configure(_ app: Application) throws {
     
 //    MARK: - Migration Management
     #if DEBUG
-//    try app.autoRevert().wait()
+    try app.autoRevert().wait()
     #endif
     
     try app.autoMigrate().wait()

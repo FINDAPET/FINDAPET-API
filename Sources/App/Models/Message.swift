@@ -25,7 +25,7 @@ final class Message: Model, Content {
     @OptionalField(key: "body_path")
     var bodyPath: String?
     
-    @Timestamp(key: "created_at", on: .create)
+    @Timestamp(key: "created_at", on: .create, format: .iso8601(withMilliseconds: true))
     var createdAt: Date?
     
     @Parent(key: "user_id")
@@ -41,9 +41,12 @@ final class Message: Model, Content {
         self.text = text
         self.isViewed = isViewed
         self.bodyPath = bodyPath
-        self.$createdAt.timestamp = createdAt
         self.$user.id = userID
         self.$chatRoom.id = chatRoomID
+        
+        guard let createdAt else { return }
+        
+        self.$createdAt.timestamp = ISO8601DateFormatter().string(from: createdAt)
     }
     
 }

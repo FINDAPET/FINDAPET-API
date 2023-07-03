@@ -60,7 +60,7 @@ struct MessageController: RouteCollection {
                         chatRooms: [ChatRoom.Output](),
                         score: .zero
                     ),
-                    createdAt: message.$createdAt.timestamp,
+                    createdAt: ISO8601DateFormatter().date(from: message.$createdAt.timestamp ?? .init()),
                     chatRoom: ChatRoom.Output(users: [User.Output](), messages: [Message.Output]())
                 ))
             }
@@ -98,7 +98,7 @@ struct MessageController: RouteCollection {
                 chatRooms: [ChatRoom.Output](),
                 score: .zero
             ),
-            createdAt: message.$createdAt.timestamp,
+            createdAt: ISO8601DateFormatter().date(from: message.$createdAt.timestamp ?? .init()),
             chatRoom: ChatRoom.Output(users: [User.Output](), messages: [Message.Output]())
         )
     }

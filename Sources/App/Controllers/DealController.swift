@@ -380,7 +380,7 @@ struct DealController: RouteCollection {
         deal.$buyer.id = buyer.id
         deal.isActive = false
         
-        cattery.score += 1 * (cattery.subscrtiption != nil ? 2 : 1)
+        cattery.score += 1 * ((try? await cattery.$subscrtiption.get(on: req.db)) != nil ? 2 : 1)
         
         try await deal.save(on: req.db)
         try await cattery.save(on: req.db)
@@ -667,7 +667,7 @@ struct DealController: RouteCollection {
                 for word in title.split(separator: " ").map({ String($0) }) where !word.isEmpty {
                     $0.group(.or) {
                         $0.filter(Deal.self, \.$title, .custom("ilike"), "%\(word)%")
-                            .filter(Deal.self, \.$tags, .custom("ilike"), word)
+                            .filter(Deal.self, \.$tags, .custom("ilike"), "%\(word)%")
                     }
                 }
             }
