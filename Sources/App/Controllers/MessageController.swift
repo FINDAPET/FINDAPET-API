@@ -58,10 +58,9 @@ struct MessageController: RouteCollection {
                         myOffers: [Offer.Output](),
                         offers: [Offer.Output](),
                         chatRooms: [ChatRoom.Output](),
-                        score: .zero,
-                        isPremiumUser: messageUser.isPremiumUser
+                        score: .zero
                     ),
-                    createdAt: message.$createdAt.timestamp,
+                    createdAt: ISO8601DateFormatter().date(from: message.$createdAt.timestamp ?? .init()),
                     chatRoom: ChatRoom.Output(users: [User.Output](), messages: [Message.Output]())
                 ))
             }
@@ -97,10 +96,9 @@ struct MessageController: RouteCollection {
                 myOffers: [Offer.Output](),
                 offers: [Offer.Output](),
                 chatRooms: [ChatRoom.Output](),
-                score: .zero,
-                isPremiumUser: messageUser.isPremiumUser
+                score: .zero
             ),
-            createdAt: message.$createdAt.timestamp,
+            createdAt: ISO8601DateFormatter().date(from: message.$createdAt.timestamp ?? .init()),
             chatRoom: ChatRoom.Output(users: [User.Output](), messages: [Message.Output]())
         )
     }
@@ -115,8 +113,34 @@ struct MessageController: RouteCollection {
         }
         
         if let secondUser = try? await User.find(chatRoom.usersID.first { $0 != user.id }, on: req.db) {
-            for deviceToken in secondUser.deviceTokens {
-                _ = req.apns.send(.init(title: user.name, subtitle: "Sent you a new message"), to: deviceToken)
+            for deviceToken in (try? await secondUser.$deviceTokens.get(on: req.db)) ?? .init() {
+                switch Platform.get(deviceToken.platform) {
+                case .iOS:
+                    do {
+                        req.apns.send(
+                            .init(
+                                title: user.name,
+                                subtitle: try LocalizationManager.main.get(secondUser.countryCode, .sentYouANewMessage)
+                            ),
+                            to: deviceToken.value
+                        ).whenComplete {
+                            switch $0 {
+                            case .success():
+                                print("❕NOTIFICATION: push notification is sent.")
+                            case .failure(let error):
+                                print("❌ ERROR: \(error.localizedDescription)")
+                            }
+                        }
+                    } catch {
+                        print("❌ ERROR: \(error.localizedDescription)")
+                    }
+                case .Android:
+//                full version
+                    continue
+                case .custom(_):
+//                full version
+                    continue
+                }
             }
         }
         
@@ -166,11 +190,11 @@ struct MessageController: RouteCollection {
             throw Abort(.notFound)
         }
         
-        try await message.delete(on: req.db)
-        
         if let path = message.bodyPath {
-            try await FileManager.set(req: req, with: path, data: .init())
+            try? await FileManager.set(req: req, with: path, data: .init())
         }
+        
+        try await message.delete(on: req.db)
         
         return .ok
     }

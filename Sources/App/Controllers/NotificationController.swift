@@ -27,15 +27,47 @@ struct NotificationController: RouteCollection {
         if !notification.coutryCodes.isEmpty {
             for countryCode in notification.coutryCodes {
                 for user in try await User.query(on: req.db).all().filter({ $0.countryCode == countryCode }) {
-                    for deviceToken in user.deviceTokens {
-                        _ = req.apns.send(.init(title: notification.title), to: deviceToken)
+                    for deviceToken in (try? await user.$deviceTokens.get(on: req.db)) ?? .init() {
+                        switch Platform.get(deviceToken.platform) {
+                        case .iOS:
+                            req.apns.send(.init(title: notification.title), to: deviceToken.value).whenComplete {
+                                switch $0 {
+                                case .success():
+                                    print("❕NOTIFICATION: push notification is sent.")
+                                case .failure(let error):
+                                    print("❌ ERROR: \(error.localizedDescription)")
+                                }
+                            }
+                        case .Android:
+//                            full version
+                            continue
+                        case .custom(_):
+//                            full version
+                            continue
+                        }
                     }
                 }
             }
         } else {
             for user in try await User.query(on: req.db).all() {
-                for deviceToken in user.deviceTokens {
-                    _ = req.apns.send(.init(title: notification.title), to: deviceToken)
+                for deviceToken in (try? await user.$deviceTokens.get(on: req.db)) ?? .init() {
+                    switch Platform.get(deviceToken.platform) {
+                    case .iOS:
+                        req.apns.send(.init(title: notification.title), to: deviceToken.value).whenComplete {
+                            switch $0 {
+                            case .success():
+                                print("❕NOTIFICATION: push notification is sent.")
+                            case .failure(let error):
+                                print("❌ ERROR: \(error.localizedDescription)")
+                            }
+                        }
+                    case .Android:
+//                        full version
+                        continue
+                    case .custom(_):
+//                        full version
+                        continue
+                    }
                 }
             }
         }
@@ -51,8 +83,24 @@ struct NotificationController: RouteCollection {
         let notification = try req.content.decode(Notification.self)
         
         for userID in notification.usersID {
-            for deviceToken in (try? await User.find(userID, on: req.db)?.deviceTokens) ?? .init() {
-                _ = req.apns.send(.init(title: notification.title), to: deviceToken)
+            for deviceToken in (try? await User.find(userID, on: req.db)?.$deviceTokens.get(on: req.db)) ?? .init() {
+                switch Platform.get(deviceToken.platform) {
+                case .iOS:
+                    req.apns.send(.init(title: notification.title), to: deviceToken.value).whenComplete {
+                        switch $0 {
+                        case .success():
+                            print("❕NOTIFICATION: push notification is sent.")
+                        case .failure(let error):
+                            print("❌ ERROR: \(error.localizedDescription)")
+                        }
+                    }
+                case .Android:
+//                    full version
+                    continue
+                case .custom(_):
+//                    full version
+                    continue
+                }
             }
         }
         

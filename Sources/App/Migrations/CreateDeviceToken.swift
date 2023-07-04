@@ -2,27 +2,28 @@
 //  File.swift
 //  
 //
-//  Created by Artemiy Zuzin on 03.08.2022.
+//  Created by Artemiy Zuzin on 10.05.2023.
 //
 
 import Foundation
 import Fluent
 
-struct CreateUserToken: AsyncMigration {
+struct CreateDeviceToken: AsyncMigration {
     
+//    MARK: - Prepare
     func prepare(on database: Database) async throws {
-        try await database.schema(UserToken.schema)
+        try await database.schema(DeviceToken.schema)
             .id()
             .field("value", .string, .required)
+            .field("platform", .string, .required)
             .field("user_id", .uuid, .required, .references(User.schema, .id))
-            .field("device_id", .string)
-            .field("created_at", .date)
             .unique(on: "value")
             .create()
     }
     
+//    MARK: - Revert
     func revert(on database: Database) async throws {
-        try await database.schema(UserToken.schema).delete()
+        try await database.schema(DeviceToken.schema).delete()
     }
     
 }

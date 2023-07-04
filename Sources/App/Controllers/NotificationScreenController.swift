@@ -22,14 +22,20 @@ struct NotificationScreenController: RouteCollection {
     }
     
     private func index(req: Request) async throws -> [NotificationScreen.Output] {
-        _ = try req.auth.require(User.self)
+        try req.auth.require(User.self)
+        
         var outputs = [NotificationScreen.Output]()
         
         guard let countryCode = req.parameters.get("countryCode") else {
             throw Abort(.badRequest)
         }
         
-        for notificationScreen in try await NotificationScreen.query(on: req.db).all().filter({ $0.countryCode == countryCode }) {
+        for notificationScreen in try await NotificationScreen.query(on: req.db).filter(
+            NotificationScreen.self,
+            \.$countryCodes,
+            .custom("ilike"),
+            "%\(countryCode)%"
+        ).all() {
             outputs.append(.init(
                 id: notificationScreen.id,
                 backgroundImageData: (try? await FileManager.get(req: req, with: notificationScreen.backgroundImagePath)) ?? .init(),
@@ -39,6 +45,7 @@ struct NotificationScreenController: RouteCollection {
                 textColorHEX: notificationScreen.textColorHEX,
                 buttonTitleColorHEX: notificationScreen.buttonTitleColorHEX,
                 buttonColorHEX: notificationScreen.buttonTitleColorHEX,
+                webViewURL: notificationScreen.webViewURL,
                 isRequired: notificationScreen.isRequired
             ))
         }
@@ -64,6 +71,7 @@ struct NotificationScreenController: RouteCollection {
             textColorHEX: notificationScreen.textColorHEX,
             buttonTitleColorHEX: notificationScreen.buttonTitleColorHEX,
             buttonColorHEX: notificationScreen.buttonTitleColorHEX,
+            webViewURL: notificationScreen.webViewURL,
             isRequired: notificationScreen.isRequired
         )
     }
@@ -79,7 +87,13 @@ struct NotificationScreenController: RouteCollection {
         try await FileManager.set(req: req, with: path, data: input.backgroundImageData)
         try await NotificationScreen(
             id: input.id,
-            countryCode: input.countryCode,
+            countryCodes: {
+                var countryCodes = String()
+                
+                Set(input.countryCodes).forEach { countryCodes += $0 }
+                
+                return countryCodes
+            }(),
             backgroundImagePath: path,
             title: input.title,
             text: input.text,
@@ -87,6 +101,7 @@ struct NotificationScreenController: RouteCollection {
             textColorHEX: input.textColorHEX,
             buttonTitleColorHEX: input.buttonTitleColorHEX,
             buttonColorHEX: input.buttonColorHEX,
+            webViewURL: input.webViewURL,
             isRequired: input.isRequired
         ).save(on: req.db)
         
@@ -94,25 +109,28 @@ struct NotificationScreenController: RouteCollection {
     }
     
     private func change(req: Request) async throws -> HTTPStatus {
-        guard try req.auth.require(User.self).isAdmin else {
-            throw Abort(.badRequest)
-        }
-        
         let input = try req.content.decode(NotificationScreen.Input.self)
         
-        guard let notificationScreen = try await NotificationScreen.find(input.id, on: req.db) else {
-            throw Abort(.notFound)
-        }
+        guard try req.auth.require(User.self).isAdmin else { throw Abort(.badRequest) }
+        guard let notificationScreen = try await NotificationScreen.find(input.id, on: req.db) else { throw Abort(.notFound) }
         
         try await FileManager.set(req: req, with: notificationScreen.backgroundImagePath, data: input.backgroundImageData)
         
-        notificationScreen.countryCode = input.countryCode
+        notificationScreen.countryCodes = {
+            var countryCodes = String()
+            
+            Set(input.countryCodes).forEach { countryCodes += $0 }
+            
+            return countryCodes
+        }()
         notificationScreen.title = input.title
         notificationScreen.text = input.text
         notificationScreen.textColorHEX = input.textColorHEX
         notificationScreen.buttonColorHEX = input.buttonColorHEX
         notificationScreen.buttonTitle = input.buttonTitle
         notificationScreen.buttonTitleColorHEX = input.buttonTitleColorHEX
+        notificationScreen.isRequired = input.isRequired
+        notificationScreen.webViewURL = input.webViewURL
         
         try await notificationScreen.save(on: req.db)
         
@@ -120,16 +138,13 @@ struct NotificationScreenController: RouteCollection {
     }
     
     private func delete(req: Request) async throws -> HTTPStatus {
-        guard try req.auth.require(User.self).isAdmin else {
-            throw Abort(.badRequest)
-        }
-        
+        guard try req.auth.require(User.self).isAdmin else { throw Abort(.badRequest) }
         guard let notificationScreen = try await NotificationScreen.find(req.parameters.get("notificationScreenID"), on: req.db) else {
             throw Abort(.notFound)
         }
         
-        try await notificationScreen.delete(on: req.db)
         try await FileManager.set(req: req, with: notificationScreen.backgroundImagePath, data: .init())
+        try await notificationScreen.delete(on: req.db)
         
         return .ok
     }

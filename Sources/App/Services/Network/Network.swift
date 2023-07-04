@@ -22,7 +22,6 @@ final class Network {
         case .GET:
             let response = try await request.client.get(
                 .init(string: url.absoluteString),
-                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
                 beforeSend: { clientReq in
                     if let authMode {
                         switch authMode {
@@ -53,7 +52,6 @@ final class Network {
         case .PUT:
             let response = try await request.client.put(
                 .init(string: url.absoluteString),
-                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
                 beforeSend: { clientReq in
                     if let authMode {
                         switch authMode {
@@ -84,7 +82,6 @@ final class Network {
         case .POST:
             let response = try await request.client.post(
                 .init(string: url.absoluteString),
-                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
                 beforeSend: { clientReq in
                     if let authMode {
                         switch authMode {
@@ -115,7 +112,6 @@ final class Network {
         case .DELETE:
             let response = try await request.client.delete(
                 .init(string: url.absoluteString),
-                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
                 beforeSend: { clientReq in
                     if let authMode {
                         switch authMode {
@@ -158,7 +154,7 @@ final class Network {
         case .GET:
             let response = try await request.client.get(
                 .init(string: url.absoluteString),
-                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
+                
                 beforeSend: { clientReq in
                     if let authMode {
                         switch authMode {
@@ -183,7 +179,6 @@ final class Network {
         case .PUT:
             let response = try await request.client.put(
                 .init(string: url.absoluteString),
-                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
                 beforeSend: { clientReq in
                     if let authMode {
                         switch authMode {
@@ -208,7 +203,6 @@ final class Network {
         case .POST:
             let response = try await request.client.post(
                 .init(string: url.absoluteString),
-                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
                 beforeSend: { clientReq in
                     if let authMode {
                         switch authMode {
@@ -234,7 +228,6 @@ final class Network {
         case .DELETE:
             let response = try await request.client.delete(
                 .init(string: url.absoluteString),
-                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
                 beforeSend: { clientReq in
                     if let authMode {
                         switch authMode {
@@ -271,7 +264,6 @@ final class Network {
         case .GET:
             let response = try await request.client.get(
                 .init(string: url.absoluteString),
-                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
                 beforeSend: { clientReq in
                     if let authMode {
                         switch authMode {
@@ -302,7 +294,6 @@ final class Network {
         case .PUT:
             let response = try await request.client.put(
                 .init(string: url.absoluteString),
-                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
                 beforeSend: { clientReq in
                     if let authMode {
                         switch authMode {
@@ -333,7 +324,6 @@ final class Network {
         case .POST:
             let response = try await request.client.post(
                 .init(string: url.absoluteString),
-                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
                 beforeSend: { clientReq in
                     if let authMode {
                         switch authMode {
@@ -364,7 +354,6 @@ final class Network {
         case .DELETE:
             let response = try await request.client.delete(
                 .init(string: url.absoluteString),
-                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
                 beforeSend: { clientReq in
                     if let authMode {
                         switch authMode {
@@ -407,7 +396,6 @@ final class Network {
         case .GET:
             let response = try await request.client.get(
                 .init(string: url.absoluteString),
-                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
                 beforeSend: { clientReq in
                     if let authMode {
                         switch authMode {
@@ -432,7 +420,6 @@ final class Network {
         case .PUT:
             let response = try await request.client.put(
                 .init(string: url.absoluteString),
-                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
                 beforeSend: { clientReq in
                     if let authMode {
                         switch authMode {
@@ -457,7 +444,6 @@ final class Network {
         case .POST:
             let response = try await request.client.post(
                 .init(string: url.absoluteString),
-                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
                 beforeSend: { clientReq in
                     if let authMode {
                         switch authMode {
@@ -483,7 +469,6 @@ final class Network {
         case .DELETE:
             let response = try await request.client.delete(
                 .init(string: url.absoluteString),
-                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
                 beforeSend: { clientReq in
                     if let authMode {
                         switch authMode {
@@ -520,7 +505,6 @@ final class Network {
         case .GET:
             let response = try await request.client.get(
                 .init(string: url.absoluteString),
-                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
                 beforeSend: { clientReq in
                     if let authMode {
                         switch authMode {
@@ -551,7 +535,6 @@ final class Network {
         case .PUT:
             let response = try await request.client.put(
                 .init(string: url.absoluteString),
-                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
                 beforeSend: { clientReq in
                     if let authMode {
                         switch authMode {
@@ -582,7 +565,6 @@ final class Network {
         case .POST:
             let response = try await request.client.post(
                 .init(string: url.absoluteString),
-                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
                 beforeSend: { clientReq in
                     if let authMode {
                         switch authMode {
@@ -613,7 +595,6 @@ final class Network {
         case .DELETE:
             let response = try await request.client.delete(
                 .init(string: url.absoluteString),
-                headers: .init([(Headers.applicationJson.rawValue, forHTTPHeaderField: Headers.contentType.rawValue)]),
                 beforeSend: { clientReq in
                     if let authMode {
                         switch authMode {

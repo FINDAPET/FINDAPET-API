@@ -11,12 +11,12 @@ import JWTKit
 let appleECP8PrivateKey: StaticString =
 """
 -----BEGIN PRIVATE KEY-----
-MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQg7RRS2oUF9Tpy1LPD
-WRSI+Pbo/pmBF6+lN13EiZ3vQ2egCgYIKoZIzj0DAQehRANCAATFl2B+xF3n3Jbt
-6EPAccB3JU5CzdO7aj3gJvyb9eShAK13/OoPNc/PCYucdNEdG8LsoBxd06EfNuBF
-Bz1VuMrd
+MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQg69Ku2pgPfIdO/ETn
+k5xNNIuzzTja9SsdlztTgB+SWxegCgYIKoZIzj0DAQehRANCAAQWvcQqtJOEVhhM
+bbW2pGKxyoXCmQbU2E+It3+mZGdoWx822Smb4ANiJ2GAwsJCb/hwHvyZk8TzEPHs
+Wbn+pTYy
 -----END PRIVATE KEY-----
 """
-let keyIdentifier: JWKIdentifier = "CX7HTV253D"
+let keyIdentifier: JWKIdentifier = "35PB3PQBA3"
 let teamIdentifier: StaticString = "FY2MUX2TBL"
 let topic: StaticString = "com.artemiy.FINDAPET-App"

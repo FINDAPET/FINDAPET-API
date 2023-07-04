@@ -16,10 +16,9 @@ struct CreateMessage: AsyncMigration {
             .field("text", .string)
             .field("is_viewed", .bool)
             .field("body_path", .string)
-            .field("created_at", .date)
-            .field("updated_at", .date)
-            .field("user_id", .uuid, .required, .references(User.schema, "id"))
-            .field("chat_room_id", .string, .required)
+            .field("created_at", .string)
+            .field("user_id", .uuid, .required, .references(User.schema, .id))
+            .field("chat_room_id", .string, .required, .references(ChatRoom.schema, .id))
             .create()
     }
     

@@ -62,10 +62,9 @@ struct ChatRoomController: RouteCollection {
                                 myOffers: [Offer.Output](),
                                 offers: [Offer.Output](),
                                 chatRooms: [ChatRoom.Output](),
-                                score: .zero,
-                                isPremiumUser: messageUser.isPremiumUser
+                                score: .zero
                             ),
-                            createdAt: message.$createdAt.timestamp,
+                            createdAt: ISO8601DateFormatter().date(from: message.$createdAt.timestamp ?? .init()),
                             chatRoom: ChatRoom.Output(users: [User.Output](), messages: [Message.Output]())
                         ))
                     }
@@ -89,8 +88,7 @@ struct ChatRoomController: RouteCollection {
                             myOffers: [Offer.Output](),
                             offers: [Offer.Output](),
                             chatRooms: [ChatRoom.Output](),
-                            score: .zero,
-                            isPremiumUser: chatUser.isPremiumUser
+                            score: .zero
                         ))
                     }
                 }
@@ -134,10 +132,9 @@ struct ChatRoomController: RouteCollection {
                         myOffers: [Offer.Output](),
                         offers: [Offer.Output](),
                         chatRooms: [ChatRoom.Output](),
-                        score: .zero,
-                        isPremiumUser: messageUser.isPremiumUser
+                        score: .zero
                     ),
-                    createdAt: message.$createdAt.timestamp,
+                    createdAt: ISO8601DateFormatter().date(from: message.$createdAt.timestamp ?? .init()),
                     chatRoom: ChatRoom.Output(users: [User.Output](), messages: [Message.Output]())
                 ))
             }
@@ -161,8 +158,7 @@ struct ChatRoomController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    score: .zero,
-                    isPremiumUser: chatUser.isPremiumUser
+                    score: .zero
                 ))
             }
         }
@@ -170,7 +166,7 @@ struct ChatRoomController: RouteCollection {
         return ChatRoom.Output(
             id: chatRoom.id,
             users: users,
-            messages: messages
+            messages: messages.sorted { $0.createdAt ?? .init() < $1.createdAt ?? .init() }
         )
     }
     
@@ -178,36 +174,40 @@ struct ChatRoomController: RouteCollection {
         let user = try req.auth.require(User.self)
         var messages = [Message.Output]()
         var users = [User.Output]()
+        var chatRoom: ChatRoom?
         
-        guard let id = req.parameters.get("userID"),
-              let chatRoom = try await ChatRoom.find(id + (user.id?.uuidString ?? .init()), on: req.db) else {
-            throw Abort(.notFound)
+        guard let id = req.parameters.get("userID") else { throw Abort(.notFound) }
+        
+        chatRoom = try? await .find((user.id?.uuidString ?? .init()) + id, on: req.db)
+        
+        if chatRoom == nil {
+            chatRoom = try await .find(id + (user.id?.uuidString ?? .init()), on: req.db)
         }
         
+        guard let chatRoom else { throw Abort(.notFound) }
         guard chatRoom.usersID.contains(where: { $0 == user.id }) || user.isAdmin else {
             throw Abort(.badRequest)
         }
         
         for message in (try? await chatRoom.$messages.get(on: req.db)) ?? [Message]() {
             if let messageUser = try? await message.$user.get(on: req.db) {
-                messages.append(Message.Output(
+                messages.append(.init(
                     id: message.id,
                     text: message.text,
                     isViewed: message.isViewed,
-                    user: User.Output(
+                    user: .init(
                         id: messageUser.id,
                         name: messageUser.name,
-                        deals: [Deal.Output](),
-                        boughtDeals: [Deal.Output](),
-                        ads: [Ad.Output](),
-                        myOffers: [Offer.Output](),
-                        offers: [Offer.Output](),
-                        chatRooms: [ChatRoom.Output](),
-                        score: .zero,
-                        isPremiumUser: messageUser.isPremiumUser
+                        deals: .init(),
+                        boughtDeals: .init(),
+                        ads: .init(),
+                        myOffers: .init(),
+                        offers: .init(),
+                        chatRooms: .init(),
+                        score: .zero
                     ),
-                    createdAt: message.$createdAt.timestamp,
-                    chatRoom: ChatRoom.Output(users: [User.Output](), messages: [Message.Output]())
+                    createdAt: ISO8601DateFormatter().date(from: message.$createdAt.timestamp ?? .init()),
+                    chatRoom: .init(users: .init(), messages: .init())
                 ))
             }
         }
@@ -220,7 +220,7 @@ struct ChatRoomController: RouteCollection {
                     avatarData = try? await FileManager.get(req: req, with: path)
                 }
                 
-                users.append(User.Output(
+                users.append(.init(
                     id: chatUser.id,
                     name: chatUser.name,
                     avatarData: avatarData,
@@ -230,13 +230,12 @@ struct ChatRoomController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    score: .zero,
-                    isPremiumUser: chatUser.isPremiumUser
+                    score: .zero
                 ))
             }
         }
         
-        return ChatRoom.Output(
+        return .init(
             id: chatRoom.id,
             users: users,
             messages: messages
@@ -252,10 +251,7 @@ struct ChatRoomController: RouteCollection {
             id += userID.uuidString
         }
         
-        guard !id.isEmpty else {
-            throw Abort(.badRequest)
-        }
-        
+        guard !id.isEmpty else { throw Abort(.badRequest) }
         guard let secondUser = try await User.find(chatRoom.usersID.first { $0 != user.id }, on: req.db) else {
             throw Abort(.notFound)
         }
@@ -307,6 +303,10 @@ struct ChatRoomController: RouteCollection {
         }
         
         for message in try await chatRoom.$messages.get(on: req.db) {
+            if let bodyPath = message.bodyPath {
+                try? await FileManager.set(req: req, with: bodyPath, data: .init())
+            }
+            
             try? await message.delete(on: req.db)
         }
         
@@ -402,12 +402,43 @@ struct ChatRoomController: RouteCollection {
                 if ChatRoomWebSocketManager.shared.chatRoomWebSockets.first(where: {
                     $0.id == chatRoomID
                 })?.users.count ?? 2 < 2 {
-                    for deviceToken in firstUser.deviceTokens {
-                        _ = req.apns.send(
-                            .init(title: firstUser.name, subtitle: "Sent you a new message"),
-                            to: deviceToken
-                        )
+                    for deviceToken in (try? await firstUser.$deviceTokens.get(on: req.db)) ?? .init() {
+                        switch Platform.get(deviceToken.platform) {
+                        case .iOS:
+                            do {
+                                req.apns.send(
+                                    .init(
+                                        title: firstUser.name,
+                                        subtitle: try LocalizationManager.main.get(
+                                            firstUser.countryCode,
+                                            .sentYouANewMessage
+                                        )
+                                    ),
+                                    to: deviceToken.value
+                                )
+                                .whenComplete {
+                                    switch $0 {
+                                    case .success():
+                                        print("❕NOTIFICATION: push notification is sent.")
+                                    case .failure(let error):
+                                        print("❌ ERROR: \(error.localizedDescription)")
+                                    }
+                                }
+                            } catch {
+                                print("❌ ERROR: \(error.localizedDescription)")
+                            }
+                        case .Android:
+//                            full version
+                            continue
+                        case .custom(_):
+//                            full version
+                            continue
+                        }
                     }
+                    
+                    try? await UserWebSocketManager.shared.userWebSockets.first {
+                        $0.id == secondUserID.uuidString
+                    }?.ws.send("update")
                 } else {
                     for userWebSocket in ChatRoomWebSocketManager.shared.chatRoomWebSockets.first(where: {
                         $0.id == chatRoomID
@@ -434,14 +465,13 @@ struct ChatRoomController: RouteCollection {
                                     myOffers: .init(),
                                     offers: .init(),
                                     chatRooms: .init(),
-                                    score: .zero,
-                                    isPremiumUser: .random()
+                                    score: .zero
                                 ),
                                 createdAt: newMessage.createdAt,
                                 chatRoom: .init(id: input.chatRoomID, users: .init(), messages: .init())
                             )) {
                                 try await userWebSocket.ws.send([UInt8](data))
-                                try await UserWebSocketManager.shared.userWebSockets.first {
+                                try? await UserWebSocketManager.shared.userWebSockets.first {
                                     $0.id == secondUserID.uuidString
                                 }?.ws.send("update")
                             }

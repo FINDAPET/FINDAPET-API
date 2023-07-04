@@ -37,14 +37,11 @@ final class User: Model, Content {
     @Field(key: "chat_rooms_id")
     var chatRoomsID: [ChatRoom.IDValue]
     
-    @Field(key: "is_premium_user")
-    var isPremiumUser: Bool
+    @OptionalChild(for: \.$user)
+    var subscrtiption: Subscription?
     
     @Field(key: "basic_currency_name")
     var basicCurrencyName: String
-    
-    @Field(key: "device_tokens")
-    var deviceTokens: [String]
     
     @Field(key: "score")
     var score: Int
@@ -79,9 +76,12 @@ final class User: Model, Content {
     @Children(for: \.$user)
     var searchTitles: [SearchTitle]
     
+    @Children(for: \.$user)
+    var deviceTokens: [DeviceToken]
+    
     init() { }
     
-    init(id: UUID? = nil, email: String, passwordHash: String, name: String = "", isActiveCattery: Bool = false, avatarPath: String? = nil, documentPath: String? = nil, description: String? = nil, isCatteryWaitVerify: Bool = false, isAdmin: Bool = false, deviceTokens: [String] = .init(), score: Int = .zero, chatRoomsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), countryCode: String? = nil, isPremiumUser: Bool = false, basicCurrencyName: String = "USD") {
+    init(id: UUID? = nil, email: String, passwordHash: String, name: String = "", isActiveCattery: Bool = false, avatarPath: String? = nil, documentPath: String? = nil, description: String? = nil, isCatteryWaitVerify: Bool = false, isAdmin: Bool = false, score: Int = .zero, chatRoomsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), countryCode: String? = nil, basicCurrencyName: String = "USD") {
         self.id = id
         self.email = email
         self.passwordHash = passwordHash
@@ -92,11 +92,9 @@ final class User: Model, Content {
         self.description = description
         self.isCatteryWaitVerify = isCatteryWaitVerify
         self.isAdmin = isAdmin
-        self.deviceTokens = deviceTokens
         self.score = score
         self.chatRoomsID = chatRoomsID
         self.countryCode = countryCode
-        self.isPremiumUser = isPremiumUser
         self.basicCurrencyName = basicCurrencyName
     }
     
@@ -128,7 +126,7 @@ extension User: ModelAuthenticatable {
 }
 
 extension User {
-    func generateToken(deviceID: UUID? = nil) throws -> UserToken {
+    func generateToken(deviceID: String? = nil) throws -> UserToken {
         return try .init(deviceID: deviceID, value: [UInt8].random(count: 16).base64, userID: self.requireID())
     }
 }
@@ -140,20 +138,18 @@ extension User {
         var avatarData: Data?
         var documentData: Data?
         var description: String?
-        var deviceTokens: [String]
         var isCatteryWaitVerify: Bool
         var chatRoomsID: [ChatRoom.IDValue]
         var countryCode: String?
         var basicCurrencyName: Currency
         
-        init(id: UUID? = nil, name: String = "", avatarData: Data? = nil, documentData: Data? = nil, description: String? = nil, isCatteryWaitVerify: Bool = false, deviceTokens: [String] = .init(), chatRoomsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), countryCode: String? = nil, basicCurrencyName: Currency = .USD) {
+        init(id: UUID? = nil, name: String = "", avatarData: Data? = nil, documentData: Data? = nil, description: String? = nil, isCatteryWaitVerify: Bool = false, chatRoomsID: [ChatRoom.IDValue] = [ChatRoom.IDValue](), countryCode: String? = nil, basicCurrencyName: Currency = .USD) {
             self.id = id
             self.name = name
             self.avatarData = avatarData
             self.documentData = documentData
             self.description = description
             self.isCatteryWaitVerify = isCatteryWaitVerify
-            self.deviceTokens = deviceTokens
             self.chatRoomsID = chatRoomsID
             self.countryCode = countryCode
             self.basicCurrencyName = basicCurrencyName
@@ -175,7 +171,8 @@ extension User {
         var offers: [Offer.Output]
         var chatRooms: [ChatRoom.Output]
         var score: Int
-        var isPremiumUser: Bool
+        var subscription: Subscription.Output?
+        var isCatteryWaitVerify: Bool?
     }
 }
 

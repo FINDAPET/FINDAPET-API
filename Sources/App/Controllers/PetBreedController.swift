@@ -22,7 +22,8 @@ struct PetBreedController: RouteCollection {
     }
     
     private func index(req: Request) async throws -> [PetBreed.Output] {
-        _ = try req.auth.require(User.self)
+        try req.auth.require(User.self)
+        
         var petBreeds = [PetBreed.Output]()
         
         for petBreed in try await PetBreed.query(on: req.db).all() {

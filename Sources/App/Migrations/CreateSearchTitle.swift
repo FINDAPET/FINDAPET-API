@@ -14,7 +14,7 @@ struct CreateSearchTitle: AsyncMigration {
         try await database.schema(SearchTitle.schema)
             .id()
             .field("title", .string, .required)
-            .field("user_id", .uuid, .required, .references(User.schema, "id"))
+            .field("user_id", .uuid, .required, .references(User.schema, .id))
             .field("created_at", .date)
             .create()
     }

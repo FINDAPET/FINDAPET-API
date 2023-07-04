@@ -22,15 +22,19 @@ final class UserToken: Model, Content {
     @Parent(key: "user_id")
     var user: User
     
+    @Timestamp(key: "created_at", on: .create)
+    var createdAt: Date?
+    
     @OptionalField(key: "device_id")
-    var deviceID: UUID?
+    var deviceID: String?
     
     init() { }
     
-    init(id: UUID? = nil, deviceID: UUID? = nil, value: String, userID: User.IDValue) {
+    init(id: UUID? = nil, deviceID: String? = nil, value: String, createdAt: Date? = nil, userID: User.IDValue) {
         self.id = id
         self.deviceID = deviceID
         self.value = value
+        self.$createdAt.timestamp = createdAt
         self.$user.id = userID
     }
     

@@ -39,8 +39,6 @@ struct UserController: RouteCollection {
         userTokenProtected.put(":userID", "approove", "cattery", "admin", use: self.aprooveCatteryVerify(req:))
         userTokenProtected.put(":userID", "delete", "cattery", "admin", use: self.deleteCatteryVerify(req:))
         userTokenProtected.webSocket("update", onUpgrade: self.userWebSocket(req:ws:))
-        userTokenProtected.put("premium", use: self.makeUserPremium(req:))
-        userTokenProtected.put("not", "premium", use: self.makeUserNotPremium(req:))
     }
     
     private func index(req: Request) async throws -> [User.Output] {
@@ -53,21 +51,16 @@ struct UserController: RouteCollection {
         
         for user in users {
             var avatarData: Data?
-            var documentData: Data?
             
             if let path = user.avatarPath {
                 avatarData = try? await FileManager.get(req: req, with: path)
-            }
-            
-            if let path = user.documentPath {
-                documentData = try? await FileManager.get(req: req, with: path)
             }
             
             usersOutput.append(User.Output(
                 id: user.id,
                 name: user.name,
                 avatarData: avatarData,
-                documentData: documentData,
+                documentData: user.documentPath != nil && !user.isCatteryWaitVerify ? .init() : nil,
                 description: user.description,
                 deals: [Deal.Output](),
                 boughtDeals: [Deal.Output](),
@@ -75,8 +68,7 @@ struct UserController: RouteCollection {
                 myOffers: [Offer.Output](),
                 offers: [Offer.Output](),
                 chatRooms: [ChatRoom.Output](),
-                score: user.score,
-                isPremiumUser: user.isPremiumUser
+                score: user.score
             ))
         }
         
@@ -99,8 +91,31 @@ struct UserController: RouteCollection {
         
         try await cattery.save(on: req.db)
         
-        for deviceToken in cattery.deviceTokens {
-            _ = req.apns.send(.init(title: "Your cattery is confirmed!"), to: deviceToken)
+        for deviceToken in try await cattery.$deviceTokens.get(on: req.db) {
+            switch Platform.get(deviceToken.platform) {
+            case .iOS:
+                do {
+                    req.apns.send(
+                        .init(title: try LocalizationManager.main.get(cattery.countryCode, .yourCatteryIsConfirmed) + "!"),
+                        to: deviceToken.value
+                    ).whenComplete {
+                        switch $0 {
+                        case .success():
+                            print("❕NOTIFICATION: push notification is sent.")
+                        case .failure(let error):
+                            print("❌ ERROR: \(error.localizedDescription)")
+                        }
+                    }
+                } catch {
+                    print("❌ ERROR: \(error.localizedDescription)")
+                }
+            case .Android:
+//                    full version
+                continue
+            case .custom(_):
+//                    full version
+                continue
+            }
         }
         
         print("❕NOFIFICATION: admin with id \(userID) approove verify for cattery with id \(catteryID)")
@@ -139,21 +154,16 @@ struct UserController: RouteCollection {
         
         for user in users {
             var avatarData: Data?
-            var documentData: Data?
             
             if let path = user.avatarPath {
                 avatarData = try? await FileManager.get(req: req, with: path)
-            }
-            
-            if let path = user.documentPath {
-                documentData = try? await FileManager.get(req: req, with: path)
             }
             
             usersOutput.append(User.Output(
                 id: user.id,
                 name: user.name,
                 avatarData: avatarData,
-                documentData: documentData,
+                documentData: user.documentPath != nil && !user.isCatteryWaitVerify ? .init() : nil,
                 description: user.description,
                 deals: [Deal.Output](),
                 boughtDeals: [Deal.Output](),
@@ -161,8 +171,7 @@ struct UserController: RouteCollection {
                 myOffers: [Offer.Output](),
                 offers: [Offer.Output](),
                 chatRooms: [ChatRoom.Output](),
-                score: user.score,
-                isPremiumUser: user.isPremiumUser
+                score: user.score
             ))
         }
         
@@ -179,21 +188,16 @@ struct UserController: RouteCollection {
         
         for user in users {
             var avatarData: Data?
-            var documentData: Data?
             
             if let path = user.avatarPath {
                 avatarData = try? await FileManager.get(req: req, with: path)
-            }
-            
-            if let path = user.documentPath {
-                documentData = try? await FileManager.get(req: req, with: path)
             }
             
             usersOutput.append(User.Output(
                 id: user.id,
                 name: user.name,
                 avatarData: avatarData,
-                documentData: documentData,
+                documentData: user.documentPath != nil && !user.isCatteryWaitVerify ? .init() : nil,
                 description: user.description,
                 deals: [Deal.Output](),
                 boughtDeals: [Deal.Output](),
@@ -201,8 +205,7 @@ struct UserController: RouteCollection {
                 myOffers: [Offer.Output](),
                 offers: [Offer.Output](),
                 chatRooms: [ChatRoom.Output](),
-                score: user.score,
-                isPremiumUser: user.isPremiumUser
+                score: user.score
             ))
         }
         
@@ -219,21 +222,16 @@ struct UserController: RouteCollection {
         
         for user in users {
             var avatarData: Data?
-            var documentData: Data?
             
             if let path = user.avatarPath {
                 avatarData = try? await FileManager.get(req: req, with: path)
-            }
-            
-            if let path = user.documentPath {
-                documentData = try? await FileManager.get(req: req, with: path)
             }
             
             usersOutput.append(User.Output(
                 id: user.id,
                 name: user.name,
                 avatarData: avatarData,
-                documentData: documentData,
+                documentData: user.documentPath != nil && !user.isCatteryWaitVerify ? .init() : nil,
                 description: user.description,
                 deals: [Deal.Output](),
                 boughtDeals: [Deal.Output](),
@@ -241,8 +239,7 @@ struct UserController: RouteCollection {
                 myOffers: [Offer.Output](),
                 offers: [Offer.Output](),
                 chatRooms: [ChatRoom.Output](),
-                score: user.score,
-                isPremiumUser: user.isPremiumUser
+                score: user.score
             ))
         }
         
@@ -250,28 +247,25 @@ struct UserController: RouteCollection {
     }
     
     private func someUser(req: Request) async throws -> User.Output {
+        try req.auth.require(User.self)
+        
         guard let someUser = try await User.find(req.parameters.get("userID"), on: req.db) else {
             throw Abort(.notFound)
         }
         
-        let user = try req.auth.require(User.self)
         var avatarData: Data?
-        var documentData: Data?
         var deals = [Deal.Output]()
         var boughtDeals = [Deal.Output]()
-        var ads = [Ad.Output]()
-        var myOffers = [Offer.Output]()
-        var offers = [Offer.Output]()
         
         if let path = someUser.avatarPath {
             avatarData = try? await FileManager.get(req: req, with: path)
         }
         
-        if let path = someUser.documentPath {
-            documentData = try? await FileManager.get(req: req, with: path)
-        }
-        
         for deal in try await someUser.$deals.get(on: req.db) {
+            guard let petType = try? await deal.$petType.get(on: req.db),
+                  let petBreed = try? await deal.$petBreed.get(on: req.db),
+                  let dealUser = try? await deal.$cattery.get(on: req.db) else { continue }
+            
             var photoDatas = [Data]()
             
             for photoPath in deal.photoPaths {
@@ -280,9 +274,7 @@ struct UserController: RouteCollection {
                 }
             }
             
-            let petType = try await deal.$petType.get(on: req.db)
-            let petBreed = try await deal.$petBreed.get(on: req.db)
-            let dealUser = try await deal.$cattery.get(on: req.db)
+            let dealBuyer = try? await deal.$buyer.get(on: req.db)
             var userDeals = [Deal.Output]()
             var dealUserAvatarData: Data?
             
@@ -316,19 +308,18 @@ struct UserController: RouteCollection {
                         myOffers: .init(),
                         offers: .init(),
                         chatRooms: .init(),
-                        score: .zero,
-                        isPremiumUser: .random()
+                        score: .zero
                     ),
-                    buyer: deal.buyer != nil ? .init(
-                        name: .init(),
+                    buyer: dealBuyer != nil ? .init(
+                        id: dealBuyer?.id,
+                        name: dealBuyer?.name ?? .init(),
                         deals: .init(),
                         boughtDeals: .init(),
                         ads: .init(),
                         myOffers: .init(),
                         offers: .init(),
                         chatRooms: .init(),
-                        score: .zero,
-                        isPremiumUser: .random()
+                        score: .zero
                     ) : nil,
                     offers: .init()
                 ))
@@ -354,12 +345,12 @@ struct UserController: RouteCollection {
                 isMale: deal.isMale,
                 birthDate: deal.birthDate,
                 color: deal.color,
-                price: Double(try await CurrencyConverter.convert(
+                price: deal.price != nil ? Double(try await CurrencyConverter.convert(
                     req,
                     from: deal.currencyName,
                     to: someUser.basicCurrencyName,
-                    amount: deal.price
-                ).result),
+                    amount: deal.price ?? .zero
+                ).result) : nil,
                 currencyName: someUser.basicCurrencyName,
                 score: deal.score,
                 cattery: .init(
@@ -372,8 +363,7 @@ struct UserController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    score: .zero,
-                    isPremiumUser: dealUser.isPremiumUser
+                    score: .zero
                 ),
                 country: deal.country,
                 city: deal.city,
@@ -383,7 +373,12 @@ struct UserController: RouteCollection {
             ))
         }
         
-        for deal in try await someUser.$boughtDeals.get(on: req.db) {
+        for deal in (try? await someUser.$boughtDeals.get(on: req.db)) ?? .init() {
+            guard let petType = try? await deal.$petType.get(on: req.db),
+                  let petBreed = try? await deal.$petBreed.get(on: req.db),
+                  let dealUser = try? await deal.$cattery.get(on: req.db),
+                  let buyer = try? await deal.$buyer.get(on: req.db) else { continue }
+            
             var photoDatas = [Data]()
             
             for photoPath in deal.photoPaths {
@@ -392,14 +387,16 @@ struct UserController: RouteCollection {
                 }
             }
             
-            let petType = try await deal.$petType.get(on: req.db)
-            let petBreed = try await deal.$petBreed.get(on: req.db)
-            let dealUser = try await deal.$cattery.get(on: req.db)
             var userDeals = [Deal.Output]()
             var dealUserAvatarData: Data?
+            var dealBuyerAvatarData: Data?
             
             if let path = dealUser.avatarPath {
                 dealUserAvatarData = try? await FileManager.get(req: req, with: path)
+            }
+            
+            if let path = buyer.avatarPath {
+                dealBuyerAvatarData = try? await FileManager.get(req: req, with: path)
             }
             
             for deal in (try? await dealUser.$deals.get(on: req.db)) ?? .init() {
@@ -428,20 +425,20 @@ struct UserController: RouteCollection {
                         myOffers: .init(),
                         offers: .init(),
                         chatRooms: .init(),
-                        score: .zero,
-                        isPremiumUser: .random()
+                        score: .zero
                     ),
-                    buyer: deal.buyer != nil ? .init(
-                        name: .init(),
+                    buyer: .init(
+                        id: buyer.id,
+                        name: buyer.name,
+                        avatarData: dealBuyerAvatarData,
                         deals: .init(),
                         boughtDeals: .init(),
                         ads: .init(),
                         myOffers: .init(),
                         offers: .init(),
                         chatRooms: .init(),
-                        score: .zero,
-                        isPremiumUser: .random()
-                    ) : nil,
+                        score: .zero
+                    ),
                     offers: .init()
                 ))
             }
@@ -466,12 +463,12 @@ struct UserController: RouteCollection {
                 isMale: deal.isMale,
                 birthDate: deal.birthDate,
                 color: deal.color,
-                price: Double(try await CurrencyConverter.convert(
+                price: deal.price != nil ? Double(try await CurrencyConverter.convert(
                     req,
                     from: deal.currencyName,
                     to: someUser.basicCurrencyName,
-                    amount: deal.price
-                ).result),
+                    amount: deal.price ?? .zero
+                ).result) : nil,
                 currencyName: someUser.basicCurrencyName,
                 score: deal.score,
                 cattery: .init(
@@ -484,225 +481,39 @@ struct UserController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    score: .zero,
-                    isPremiumUser: dealUser.isPremiumUser
+                    score: .zero
                 ),
                 country: deal.country,
                 city: deal.city,
                 description: deal.description,
-                buyer: nil,
-                offers: [Offer.Output]()
-            ))
-        }
-        
-        for ad in try await someUser.$ads.get(on: req.db) {
-            if let data = try? await FileManager.get(req: req, with: ad.contentPath) {
-                ads.append(Ad.Output(
-                    id: ad.id,
-                    contentData: data,
-                    custromerName: ad.custromerName,
-                    link: ad.link,
-                    cattery: User.Output(
-                        name: someUser.name,
-                        deals: [Deal.Output](),
-                        boughtDeals: [Deal.Output](),
-                        ads: [Ad.Output](),
-                        myOffers: [Offer.Output](),
-                        offers: [Offer.Output](),
-                        chatRooms: [ChatRoom.Output](),
-                        score: .zero,
-                        isPremiumUser: someUser.isPremiumUser
-                    )
-                ))
-            }
-        }
-        
-        for myOffer in try await someUser.$myOffers.get(on: req.db) {
-            let deal = try await myOffer.$deal.get(on: req.db)
-            let buyer = try await myOffer.$buyer.get(on: req.db)
-            var dealPhotoData: Data?
-            var buyerAvatarData: Data?
-            
-            if let path = buyer.avatarPath {
-                dealPhotoData = try? await FileManager.get(req: req, with: path)
-            }
-            
-            if let path = deal.photoPaths.first {
-                buyerAvatarData = try? await FileManager.get(req: req, with: path)
-            }
-            
-            let petType = try await deal.$petType.get(on: req.db)
-            let petBreed = try await deal.$petBreed.get(on: req.db)
-            
-            myOffers.append(Offer.Output(
-                price: myOffer.price,
-                currencyName: myOffer.currencyName,
-                buyer: User.Output(
+                buyer: .init(
+                    id: buyer.id,
                     name: buyer.name,
-                    avatarData: buyerAvatarData,
-                    deals: [Deal.Output](),
-                    boughtDeals: [Deal.Output](),
-                    ads: [Ad.Output](),
-                    myOffers: [Offer.Output](),
-                    offers: [Offer.Output](),
-                    chatRooms: [ChatRoom.Output](),
-                    score: .zero,
-                    isPremiumUser: buyer.isPremiumUser
+                    deals: .init(),
+                    boughtDeals: .init(),
+                    ads: .init(),
+                    myOffers: .init(),
+                    offers: .init(),
+                    chatRooms: .init(),
+                    score: .zero
                 ),
-                deal: Deal.Output(
-                    title: deal.title,
-                    photoDatas: [dealPhotoData ?? Data()],
-                    tags: deal.tags.split(separator: "#").map({ String($0) }),
-                    isPremiumDeal: deal.isPremiumDeal,
-                    isActive: deal.isActive,
-                    viewsCount: deal.viewsCount,
-                    mode: deal.mode,
-                    petType: .init(
-                        id: petType.id,
-                        localizedNames: petType.localizedNames,
-                        imageData: (try? await FileManager.get(req: req, with: petType.imagePath)) ?? .init(),
-                        petBreeds: try await petType.$petBreeds.get(on: req.db)
-                    ),
-                    petBreed: .init(id: petBreed.id, name: petBreed.name, petType: petType),
-                    petClass: .get(deal.petClass) ?? .allClass,
-                    isMale: deal.isMale,
-                    birthDate: deal.birthDate,
-                    color: deal.color,
-                    price: Double(try await CurrencyConverter.convert(
-                        req,
-                        from: deal.currencyName,
-                        to: user.basicCurrencyName,
-                        amount: deal.price
-                    ).result),
-                    currencyName: user.basicCurrencyName,
-                    score: deal.score,
-                    cattery: User.Output(
-                        name: String(),
-                        deals: [Deal.Output](),
-                        boughtDeals: [Deal.Output](),
-                        ads: [Ad.Output](),
-                        myOffers: [Offer.Output](),
-                        offers: [Offer.Output](),
-                        chatRooms: [ChatRoom.Output](),
-                        score: .zero,
-                        isPremiumUser: user.isPremiumUser
-                    ),
-                    offers: [Offer.Output]()
-                ),
-                cattery: User.Output(
-                    name: String(),
-                    deals: [Deal.Output](),
-                    boughtDeals: [Deal.Output](),
-                    ads: [Ad.Output](),
-                    myOffers: [Offer.Output](),
-                    offers: [Offer.Output](),
-                    chatRooms: [ChatRoom.Output](),
-                    score: .zero,
-                    isPremiumUser: user.isPremiumUser
-                )
+                offers: .init()
             ))
         }
         
-        for offer in try await someUser.$offers.get(on: req.db) {
-            let deal = try await offer.$deal.get(on: req.db)
-            let buyer = try await offer.$buyer.get(on: req.db)
-            var dealPhotoData: Data?
-            var buyerAvatarData: Data?
-            
-            if let path = buyer.avatarPath {
-                dealPhotoData = try? await FileManager.get(req: req, with: path)
-            }
-            
-            if let path = deal.photoPaths.first {
-                buyerAvatarData = try? await FileManager.get(req: req, with: path)
-            }
-            
-            let petType = try await deal.$petType.get(on: req.db)
-            let petBreed = try await deal.$petBreed.get(on: req.db)
-            
-            offers.append(Offer.Output(
-                price: offer.price,
-                currencyName: offer.currencyName,
-                buyer: User.Output(
-                    name: buyer.name,
-                    avatarData: buyerAvatarData,
-                    deals: [Deal.Output](),
-                    boughtDeals: [Deal.Output](),
-                    ads: [Ad.Output](),
-                    myOffers: [Offer.Output](),
-                    offers: [Offer.Output](),
-                    chatRooms: [ChatRoom.Output](),
-                    score: .zero,
-                    isPremiumUser: buyer.isPremiumUser
-                ),
-                deal: Deal.Output(
-                    title: deal.title,
-                    photoDatas: [dealPhotoData ?? Data()],
-                    tags: deal.tags.split(separator: "#").map({ String($0) }),
-                    isPremiumDeal: deal.isPremiumDeal,
-                    isActive: deal.isActive,
-                    viewsCount: deal.viewsCount,
-                    mode: deal.mode,
-                    petType: .init(
-                        id: petType.id,
-                        localizedNames: petType.localizedNames,
-                        imageData: (try? await FileManager.get(req: req, with: petType.imagePath)) ?? .init(),
-                        petBreeds: try await petType.$petBreeds.get(on: req.db)
-                    ),
-                    petBreed: .init(id: petBreed.id, name: petBreed.name, petType: petType),
-                    petClass: .get(deal.petClass) ?? .allClass,
-                    isMale: deal.isMale,
-                    birthDate: deal.birthDate,
-                    color: deal.color,
-                    price: Double(try await CurrencyConverter.convert(
-                        req,
-                        from: deal.currencyName,
-                        to: user.basicCurrencyName,
-                        amount: deal.price
-                    ).result),
-                    currencyName: user.basicCurrencyName,
-                    score: deal.score,
-                    cattery: User.Output(
-                        name: String(),
-                        deals: [Deal.Output](),
-                        boughtDeals: [Deal.Output](),
-                        ads: [Ad.Output](),
-                        myOffers: [Offer.Output](),
-                        offers: [Offer.Output](),
-                        chatRooms: [ChatRoom.Output](),
-                        score: .zero,
-                        isPremiumUser: user.isPremiumUser
-                    ),
-                    offers: [Offer.Output]()
-                ),
-                cattery: User.Output(
-                    name: String(),
-                    deals: [Deal.Output](),
-                    boughtDeals: [Deal.Output](),
-                    ads: [Ad.Output](),
-                    myOffers: [Offer.Output](),
-                    offers: [Offer.Output](),
-                    chatRooms: [ChatRoom.Output](),
-                    score: .zero,
-                    isPremiumUser: user.isPremiumUser
-                )
-            ))
-        }
-        
-        return User.Output(
+        return .init(
             id: someUser.id,
             name: someUser.name,
             avatarData: avatarData,
-            documentData: documentData,
+            documentData: someUser.documentPath != nil && !someUser.isCatteryWaitVerify ? .init() : nil,
             description: someUser.description,
             deals: deals,
             boughtDeals: boughtDeals,
-            ads: ads,
-            myOffers: myOffers,
-            offers: offers,
-            chatRooms: [ChatRoom.Output](),
-            score: someUser.score,
-            isPremiumUser: someUser.isPremiumUser
+            ads: .init(),
+            myOffers: .init(),
+            offers: .init(),
+            chatRooms: .init(),
+            score: someUser.score
         )
     }
     
@@ -710,23 +521,18 @@ struct UserController: RouteCollection {
         let user = try req.auth.require(User.self)
         
         var avatarData: Data?
-        var documentData: Data?
         var deals = [Deal.Output]()
         var boughtDeals = [Deal.Output]()
-        var ads = [Ad.Output]()
-        var myOffers = [Offer.Output]()
-        var offers = [Offer.Output]()
-        var chatRooms = [ChatRoom.Output]()
         
         if let path = user.avatarPath {
             avatarData = try? await FileManager.get(req: req, with: path)
         }
         
-        if let path = user.documentPath {
-            documentData = try? await FileManager.get(req: req, with: path)
-        }
-        
         for deal in try await user.$deals.get(on: req.db) {
+            guard let petType = try? await deal.$petType.get(on: req.db),
+                  let petBreed = try? await deal.$petBreed.get(on: req.db),
+                  let dealUser = try? await deal.$cattery.get(on: req.db) else { continue }
+            
             var photoDatas = [Data]()
             
             for photoPath in deal.photoPaths {
@@ -735,9 +541,7 @@ struct UserController: RouteCollection {
                 }
             }
             
-            let petType = try await deal.$petType.get(on: req.db)
-            let petBreed = try await deal.$petBreed.get(on: req.db)
-            let dealUser = try await deal.$cattery.get(on: req.db)
+            let dealBuyer = try? await deal.$buyer.get(on: req.db)
             var userDeals = [Deal.Output]()
             var dealUserAvatarData: Data?
             
@@ -771,8 +575,7 @@ struct UserController: RouteCollection {
                         myOffers: .init(),
                         offers: .init(),
                         chatRooms: .init(),
-                        score: .zero,
-                        isPremiumUser: .random()
+                        score: .zero
                     ),
                     buyer: deal.buyer != nil ? .init(
                         name: .init(),
@@ -782,8 +585,7 @@ struct UserController: RouteCollection {
                         myOffers: .init(),
                         offers: .init(),
                         chatRooms: .init(),
-                        score: .zero,
-                        isPremiumUser: .random()
+                        score: .zero
                     ) : nil,
                     offers: .init()
                 ))
@@ -809,12 +611,12 @@ struct UserController: RouteCollection {
                 isMale: deal.isMale,
                 birthDate: deal.birthDate,
                 color: deal.color,
-                price: Double(try await CurrencyConverter.convert(
+                price: deal.price != nil ? Double(try await CurrencyConverter.convert(
                     req,
                     from: deal.currencyName,
                     to: user.basicCurrencyName,
-                    amount: deal.price
-                ).result),
+                    amount: deal.price ?? .zero
+                ).result) : nil,
                 currencyName: user.basicCurrencyName,
                 score: deal.score,
                 cattery: .init(
@@ -827,13 +629,22 @@ struct UserController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    score: .zero,
-                    isPremiumUser: dealUser.isPremiumUser
+                    score: .zero
                 ),
                 country: deal.country,
                 city: deal.city,
                 description: deal.description,
-                buyer: nil,
+                buyer: dealBuyer != nil ? .init(
+                    id: dealBuyer?.id,
+                    name: dealBuyer?.name ?? .init(),
+                    deals: .init(),
+                    boughtDeals: .init(),
+                    ads: .init(),
+                    myOffers: .init(),
+                    offers: .init(),
+                    chatRooms: .init(),
+                    score: .zero
+                ) : nil,
                 offers: [Offer.Output]()
             ))
         }
@@ -852,9 +663,18 @@ struct UserController: RouteCollection {
             let dealUser = try await deal.$cattery.get(on: req.db)
             var userDeals = [Deal.Output]()
             var dealUserAvatarData: Data?
+            var buyerUserAvatarData: Data?
+            
+            guard let buyer = try? await deal.$buyer.get(on: req.db) else {
+                continue
+            }
             
             if let path = dealUser.avatarPath {
                 dealUserAvatarData = try? await FileManager.get(req: req, with: path)
+            }
+            
+            if let path = buyer.avatarPath {
+                buyerUserAvatarData = try? await FileManager.get(req: req, with: path)
             }
             
             for deal in (try? await dealUser.$deals.get(on: req.db)) ?? .init() {
@@ -883,20 +703,20 @@ struct UserController: RouteCollection {
                         myOffers: .init(),
                         offers: .init(),
                         chatRooms: .init(),
-                        score: .zero,
-                        isPremiumUser: .random()
+                        score: .zero
                     ),
-                    buyer: deal.buyer != nil ? .init(
-                        name: .init(),
+                    buyer: .init(
+                        id: buyer.id,
+                        name: buyer.name,
+                        avatarData: buyerUserAvatarData,
                         deals: .init(),
                         boughtDeals: .init(),
                         ads: .init(),
                         myOffers: .init(),
                         offers: .init(),
                         chatRooms: .init(),
-                        score: .zero,
-                        isPremiumUser: .random()
-                    ) : nil,
+                        score: .zero
+                    ),
                     offers: .init()
                 ))
             }
@@ -921,12 +741,12 @@ struct UserController: RouteCollection {
                 isMale: deal.isMale,
                 birthDate: deal.birthDate,
                 color: deal.color,
-                price: Double(try await CurrencyConverter.convert(
+                price: deal.price != nil ? Double(try await CurrencyConverter.convert(
                     req,
                     from: deal.currencyName,
                     to: user.basicCurrencyName,
-                    amount: deal.price
-                ).result),
+                    amount: deal.price ?? .zero
+                ).result) : nil,
                 currencyName: user.basicCurrencyName,
                 score: deal.score,
                 cattery: .init(
@@ -939,300 +759,47 @@ struct UserController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    score: .zero,
-                    isPremiumUser: dealUser.isPremiumUser
+                    score: .zero
                 ),
                 country: deal.country,
                 city: deal.city,
                 description: deal.description,
-                buyer: nil,
+                buyer: .init(
+                    id: user.id,
+                    name: user.name,
+                    deals: .init(),
+                    boughtDeals: .init(),
+                    ads: .init(),
+                    myOffers: .init(),
+                    offers: .init(),
+                    chatRooms: .init(),
+                    score: .zero
+                ),
                 offers: [Offer.Output]()
             ))
         }
         
-        for ad in try await user.$ads.get(on: req.db) {
-            if let data = try? await FileManager.get(req: req, with: ad.contentPath) {
-                ads.append(Ad.Output(
-                    id: ad.id,
-                    contentData: data,
-                    custromerName: ad.custromerName,
-                    link: ad.link,
-                    cattery: User.Output(
-                        name: user.name,
-                        deals: [Deal.Output](),
-                        boughtDeals: [Deal.Output](),
-                        ads: [Ad.Output](),
-                        myOffers: [Offer.Output](),
-                        offers: [Offer.Output](),
-                        chatRooms: [ChatRoom.Output](),
-                        score: .zero,
-                        isPremiumUser: user.isPremiumUser
-                    )
-                ))
-            }
-        }
-        
-        for myOffer in try await user.$myOffers.get(on: req.db) {
-            let deal = try await myOffer.$deal.get(on: req.db)
-            let buyer = try await myOffer.$buyer.get(on: req.db)
-            var dealPhotoData: Data?
-            var buyerAvatarData: Data?
-            
-            if let path = buyer.avatarPath {
-                dealPhotoData = try? await FileManager.get(req: req, with: path)
-            }
-            
-            if let path = deal.photoPaths.first {
-                buyerAvatarData = try? await FileManager.get(req: req, with: path)
-            }
-            
-            let petType = try await deal.$petType.get(on: req.db)
-            let petBreed = try await deal.$petBreed.get(on: req.db)
-            
-            myOffers.append(Offer.Output(
-                price: myOffer.price,
-                currencyName: myOffer.currencyName,
-                buyer: User.Output(
-                    name: buyer.name,
-                    avatarData: buyerAvatarData,
-                    deals: [Deal.Output](),
-                    boughtDeals: [Deal.Output](),
-                    ads: [Ad.Output](),
-                    myOffers: [Offer.Output](),
-                    offers: [Offer.Output](),
-                    chatRooms: [ChatRoom.Output](),
-                    score: .zero,
-                    isPremiumUser: buyer.isPremiumUser
-                ),
-                deal: Deal.Output(
-                    title: deal.title,
-                    photoDatas: [dealPhotoData ?? Data()],
-                    tags: deal.tags.split(separator: "#").map({ String($0) }),
-                    isPremiumDeal: deal.isPremiumDeal,
-                    isActive: deal.isActive,
-                    viewsCount: deal.viewsCount,
-                    mode: deal.mode,
-                    petType: .init(
-                        id: petType.id,
-                        localizedNames: petType.localizedNames,
-                        imageData: (try? await FileManager.get(req: req, with: petType.imagePath)) ?? .init(),
-                        petBreeds: try await petType.$petBreeds.get(on: req.db)
-                    ),
-                    petBreed: .init(id: petBreed.id, name: petBreed.name, petType: petType),
-                    petClass: .get(deal.petClass) ?? .allClass,
-                    isMale: deal.isMale,
-                    birthDate: deal.birthDate,
-                    color: deal.color,
-                    price: Double(try await CurrencyConverter.convert(
-                        req,
-                        from: deal.currencyName,
-                        to: user.basicCurrencyName,
-                        amount: deal.price
-                    ).result),
-                    currencyName: user.basicCurrencyName,
-                    score: deal.score,
-                    cattery: User.Output(
-                        name: "",
-                        deals: [Deal.Output](),
-                        boughtDeals: [Deal.Output](),
-                        ads: [Ad.Output](),
-                        myOffers: [Offer.Output](),
-                        offers: [Offer.Output](),
-                        chatRooms: [ChatRoom.Output](),
-                        score: .zero,
-                        isPremiumUser: user.isPremiumUser
-                    ),
-                    offers: [Offer.Output]()
-                ),
-                cattery: User.Output(
-                    name: "",
-                    deals: [Deal.Output](),
-                    boughtDeals: [Deal.Output](),
-                    ads: [Ad.Output](),
-                    myOffers: [Offer.Output](),
-                    offers: [Offer.Output](),
-                    chatRooms: [ChatRoom.Output](),
-                    score: .zero,
-                    isPremiumUser: user.isPremiumUser
-                )
-            ))
-        }
-        
-        for offer in try await user.$offers.get(on: req.db) {
-            let deal = try await offer.$deal.get(on: req.db)
-            let buyer = try await offer.$buyer.get(on: req.db)
-            var dealPhotoData: Data?
-            var buyerAvatarData: Data?
-            
-            if let path = buyer.avatarPath {
-                dealPhotoData = try? await FileManager.get(req: req, with: path)
-            }
-            
-            if let path = deal.photoPaths.first {
-                buyerAvatarData = try? await FileManager.get(req: req, with: path)
-            }
-            
-            let petType = try await deal.$petType.get(on: req.db)
-            let petBreed = try await deal.$petBreed.get(on: req.db)
-            
-            offers.append(Offer.Output(
-                price: offer.price,
-                currencyName: offer.currencyName,
-                buyer: User.Output(
-                    name: buyer.name,
-                    avatarData: buyerAvatarData,
-                    deals: [Deal.Output](),
-                    boughtDeals: [Deal.Output](),
-                    ads: [Ad.Output](),
-                    myOffers: [Offer.Output](),
-                    offers: [Offer.Output](),
-                    chatRooms: [ChatRoom.Output](),
-                    score: .zero,
-                    isPremiumUser: buyer.isPremiumUser
-                ),
-                deal: Deal.Output(
-                    title: deal.title,
-                    photoDatas: [dealPhotoData ?? Data()],
-                    tags: deal.tags.split(separator: "#").map({ String($0) }),
-                    isPremiumDeal: deal.isPremiumDeal,
-                    isActive: deal.isActive,
-                    viewsCount: deal.viewsCount,
-                    mode: deal.mode,
-                    petType: .init(
-                        id: petType.id,
-                        localizedNames: petType.localizedNames,
-                        imageData: (try? await FileManager.get(req: req, with: petType.imagePath)) ?? .init(),
-                        petBreeds: try await petType.$petBreeds.get(on: req.db)
-                    ),
-                    petBreed: .init(id: petBreed.id, name: petBreed.name, petType: petType),
-                    petClass: .get(deal.petClass) ?? .allClass,
-                    isMale: deal.isMale,
-                    birthDate: deal.birthDate,
-                    color: deal.color,
-                    price: Double(try await CurrencyConverter.convert(
-                        req,
-                        from: deal.currencyName,
-                        to: user.basicCurrencyName,
-                        amount: deal.price
-                    ).result),
-                    currencyName: user.basicCurrencyName,
-                    score: deal.score,
-                    cattery: User.Output(
-                        name: String(),
-                        deals: [Deal.Output](),
-                        boughtDeals: [Deal.Output](),
-                        ads: [Ad.Output](),
-                        myOffers: [Offer.Output](),
-                        offers: [Offer.Output](),
-                        chatRooms: [ChatRoom.Output](),
-                        score: .zero,
-                        isPremiumUser: user.isPremiumUser
-                    ),
-                    offers: [Offer.Output]()
-                ),
-                cattery: User.Output(
-                    name: String(),
-                    deals: [Deal.Output](),
-                    boughtDeals: [Deal.Output](),
-                    ads: [Ad.Output](),
-                    myOffers: [Offer.Output](),
-                    offers: [Offer.Output](),
-                    chatRooms: [ChatRoom.Output](),
-                    score: .zero,
-                    isPremiumUser: user.isPremiumUser
-                )
-            ))
-        }
-        
-        for chatRoomID in user.chatRoomsID {
-            var messages = [Message.Output]()
-            var users = [User.Output]()
-            
-            if let chatRoom = try? await ChatRoom.find(chatRoomID, on: req.db) {
-                for message in (try? await chatRoom.$messages.get(on: req.db)) ?? [Message]() {
-                    if let messageUser = try? await message.$user.get(on: req.db) {
-                        var bodyData: Data?
-                        
-                        if let path = message.bodyPath {
-                            bodyData = try? await FileManager.get(req: req, with: path)
-                        }
-                        
-                        messages.append(Message.Output(
-                            id: message.id,
-                            text: message.text,
-                            isViewed: message.isViewed,
-                            bodyData: bodyData,
-                            user: User.Output(
-                                id: messageUser.id,
-                                name: messageUser.name,
-                                deals: [Deal.Output](),
-                                boughtDeals: [Deal.Output](),
-                                ads: [Ad.Output](),
-                                myOffers: [Offer.Output](),
-                                offers: [Offer.Output](),
-                                chatRooms: [ChatRoom.Output](),
-                                score: .zero,
-                                isPremiumUser: messageUser.isPremiumUser
-                            ),
-                            createdAt: message.$createdAt.timestamp,
-                            chatRoom: ChatRoom.Output(users: [User.Output](), messages: [Message.Output]())
-                        ))
-                    }
-                }
-                
-                for userID in chatRoom.usersID {
-                    if let chatUser = try? await User.find(userID, on: req.db) {
-                        var avatarData: Data?
-                        
-                        if let path = chatUser.avatarPath {
-                            avatarData = try? await FileManager.get(req: req, with: path)
-                        }
-                        
-                        users.append(User.Output(
-                            id: chatUser.id,
-                            name: chatUser.name,
-                            avatarData: avatarData,
-                            deals: [Deal.Output](),
-                            boughtDeals: [Deal.Output](),
-                            ads: [Ad.Output](),
-                            myOffers: [Offer.Output](),
-                            offers: [Offer.Output](),
-                            chatRooms: [ChatRoom.Output](),
-                            score: .zero,
-                            isPremiumUser: chatUser.isPremiumUser
-                        ))
-                    }
-                }
-                
-                chatRooms.append(ChatRoom.Output(
-                    id: chatRoom.id,
-                    users: users,
-                    messages: messages
-                ))
-            }
-        }
-        
-        return User.Output(
+        return .init(
             id: user.id,
             name: user.name,
             avatarData: avatarData,
-            documentData: documentData,
+            documentData: user.documentPath != nil && !user.isCatteryWaitVerify ? .init() : nil,
             description: user.description,
             deals: deals,
             boughtDeals: boughtDeals,
-            ads: ads,
-            myOffers: myOffers,
-            offers: offers,
-            chatRooms: chatRooms,
+            ads: .init(),
+            myOffers: .init(),
+            offers: .init(),
+            chatRooms: .init(),
             score: user.score,
-            isPremiumUser: user.isPremiumUser
+            isCatteryWaitVerify: user.isCatteryWaitVerify
         )
     }
     
     private func someUserDeals(req: Request) async throws -> [Deal.Output] {
-        _ = try req.auth.require(User.self)
+        try req.auth.require(User.self)
         
-        guard let someUser = try await User.find(req.parameters.get(":userID"), on: req.db) else {
+        guard let someUser = try await User.find(req.parameters.get("userID"), on: req.db) else {
             throw Abort(.notFound)
         }
         
@@ -1283,8 +850,7 @@ struct UserController: RouteCollection {
                         myOffers: .init(),
                         offers: .init(),
                         chatRooms: .init(),
-                        score: .zero,
-                        isPremiumUser: .random()
+                        score: .zero
                     ),
                     buyer: deal.buyer != nil ? .init(
                         name: .init(),
@@ -1294,8 +860,7 @@ struct UserController: RouteCollection {
                         myOffers: .init(),
                         offers: .init(),
                         chatRooms: .init(),
-                        score: .zero,
-                        isPremiumUser: .random()
+                        score: .zero
                     ) : nil,
                     offers: .init()
                 ))
@@ -1321,12 +886,12 @@ struct UserController: RouteCollection {
                 isMale: deal.isMale,
                 birthDate: deal.birthDate,
                 color: deal.color,
-                price: Double(try await CurrencyConverter.convert(
+                price: deal.price != nil ? Double(try await CurrencyConverter.convert(
                     req,
                     from: deal.currencyName,
                     to: someUser.basicCurrencyName,
-                    amount: deal.price
-                ).result),
+                    amount: deal.price ?? .zero
+                ).result) : nil,
                 currencyName: someUser.basicCurrencyName,
                 score: deal.score,
                 cattery: .init(
@@ -1339,8 +904,7 @@ struct UserController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    score: .zero,
-                    isPremiumUser: dealUser.isPremiumUser
+                    score: .zero
                 ),
                 country: deal.country,
                 city: deal.city,
@@ -1354,9 +918,9 @@ struct UserController: RouteCollection {
     }
     
     private func someUserBoughtDeals(req: Request) async throws -> [Deal.Output] {
-        _ = try req.auth.require(User.self)
+        try req.auth.require(User.self)
         
-        guard let someUser = try await User.find(req.parameters.get(":userID"), on: req.db) else {
+        guard let someUser = try await User.find(req.parameters.get("userID"), on: req.db) else {
             throw Abort(.notFound)
         }
         
@@ -1407,8 +971,7 @@ struct UserController: RouteCollection {
                         myOffers: .init(),
                         offers: .init(),
                         chatRooms: .init(),
-                        score: .zero,
-                        isPremiumUser: .random()
+                        score: .zero
                     ),
                     buyer: deal.buyer != nil ? .init(
                         name: .init(),
@@ -1418,18 +981,17 @@ struct UserController: RouteCollection {
                         myOffers: .init(),
                         offers: .init(),
                         chatRooms: .init(),
-                        score: .zero,
-                        isPremiumUser: .random()
+                        score: .zero
                     ) : nil,
                     offers: .init()
                 ))
             }
             
-            boughtDeals.append(Deal.Output(
+            boughtDeals.append(.init(
                 id: deal.id,
                 title: deal.title,
                 photoDatas: photoDatas,
-                tags: deal.tags.split(separator: "#").map({ String($0) }),
+                tags: deal.tags.split(separator: "#").map(String.init),
                 isPremiumDeal: deal.isPremiumDeal,
                 isActive: deal.isActive,
                 viewsCount: deal.viewsCount,
@@ -1445,12 +1007,12 @@ struct UserController: RouteCollection {
                 isMale: deal.isMale,
                 birthDate: deal.birthDate,
                 color: deal.color,
-                price: Double(try await CurrencyConverter.convert(
+                price: deal.price != nil ? .init(try await CurrencyConverter.convert(
                     req,
                     from: deal.currencyName,
                     to: someUser.basicCurrencyName,
-                    amount: deal.price
-                ).result),
+                    amount: deal.price ?? .zero
+                ).result) : nil,
                 currencyName: someUser.basicCurrencyName,
                 score: deal.score,
                 cattery: .init(
@@ -1458,19 +1020,18 @@ struct UserController: RouteCollection {
                     name: dealUser.name,
                     avatarData: dealUserAvatarData,
                     deals: userDeals,
-                    boughtDeals: [Deal.Output](),
-                    ads: [Ad.Output](),
-                    myOffers: [Offer.Output](),
-                    offers: [Offer.Output](),
-                    chatRooms: [ChatRoom.Output](),
-                    score: .zero,
-                    isPremiumUser: dealUser.isPremiumUser
+                    boughtDeals: .init(),
+                    ads: .init(),
+                    myOffers: .init(),
+                    offers: .init(),
+                    chatRooms: .init(),
+                    score: .zero
                 ),
                 country: deal.country,
                 city: deal.city,
                 description: deal.description,
                 buyer: nil,
-                offers: [Offer.Output]()
+                offers: .init()
             ))
         }
         
@@ -1478,13 +1039,11 @@ struct UserController: RouteCollection {
     }
     
     private func someUserAds(req: Request) async throws -> [Ad.Output] {
-        _ = try req.auth.require(User.self)
-        
-        guard let someUser = try await User.find(req.parameters.get(":userID"), on: req.db) else {
-            throw Abort(.notFound)
-        }
-        
+        let user = try req.auth.require(User.self)
         var ads = [Ad.Output]()
+        
+        guard let someUser = try await User.find(req.parameters.get("userID"), on: req.db) else { throw Abort(.notFound) }
+        guard user.id == someUser.id || user.isAdmin else { throw Abort(.badRequest) }
         
         for ad in try await someUser.$ads.get(on: req.db) {
             if let data = try? await FileManager.get(req: req, with: ad.contentPath) {
@@ -1494,6 +1053,7 @@ struct UserController: RouteCollection {
                     custromerName: ad.custromerName,
                     link: ad.link,
                     cattery: User.Output(
+                        id: someUser.id,
                         name: someUser.name,
                         deals: [Deal.Output](),
                         boughtDeals: [Deal.Output](),
@@ -1501,8 +1061,7 @@ struct UserController: RouteCollection {
                         myOffers: [Offer.Output](),
                         offers: [Offer.Output](),
                         chatRooms: [ChatRoom.Output](),
-                        score: .zero,
-                        isPremiumUser: someUser.isPremiumUser
+                        score: .zero
                     )
                 ))
             }
@@ -1512,35 +1071,43 @@ struct UserController: RouteCollection {
     }
     
     private func myOffers(req: Request) async throws -> [Offer.Output] {
-        _ = try req.auth.require(User.self)
-        
-        guard let someUser = try await User.find(req.parameters.get(":userID"), on: req.db) else {
-            throw Abort(.notFound)
-        }
-        
+        let user = try req.auth.require(User.self)
         var myOffers = [Offer.Output]()
         
+        guard let someUser = try await User.find(req.parameters.get("userID"), on: req.db) else { throw Abort(.notFound) }
+        guard user.id == someUser.id || user.isAdmin else { throw Abort(.badRequest) }
+        
         for myOffer in try await someUser.$myOffers.get(on: req.db) {
-            let deal = try await myOffer.$deal.get(on: req.db)
-            let buyer = try await myOffer.$buyer.get(on: req.db)
-            var dealPhotoData: Data?
+            guard let deal = try? await myOffer.$deal.get(on: req.db),
+                  let buyer = try? await myOffer.$buyer.get(on: req.db),
+                  let cattery = try? await myOffer.$cattery.get(on: req.db) else { continue }
+            
+            var dealPhotoDatas = [Data]()
             var buyerAvatarData: Data?
+            var catteryAvatarData: Data?
             
             if let path = buyer.avatarPath {
-                dealPhotoData = try? await FileManager.get(req: req, with: path)
-            }
-            
-            if let path = deal.photoPaths.first {
                 buyerAvatarData = try? await FileManager.get(req: req, with: path)
             }
             
-            let petType = try await deal.$petType.get(on: req.db)
-            let petBreed = try await deal.$petBreed.get(on: req.db)
+            if let path = cattery.avatarPath {
+                catteryAvatarData = try? await FileManager.get(req: req, with: path)
+            }
+            
+            for path in deal.photoPaths {
+                guard let data = try? await FileManager.get(req: req, with: path) else { continue }
+                
+                dealPhotoDatas.append(data)
+            }
+            
+            guard let petType = try? await deal.$petType.get(on: req.db), let petBreed = try? await deal.$petBreed.get(on: req.db) else { continue }
             
             myOffers.append(Offer.Output(
+                id: myOffer.id,
                 price: myOffer.price,
                 currencyName: myOffer.currencyName,
                 buyer: User.Output(
+                    id: buyer.id,
                     name: buyer.name,
                     avatarData: buyerAvatarData,
                     deals: [Deal.Output](),
@@ -1549,12 +1116,12 @@ struct UserController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    score: .zero,
-                    isPremiumUser: buyer.isPremiumUser
+                    score: .zero
                 ),
                 deal: Deal.Output(
+                    id: deal.id,
                     title: deal.title,
-                    photoDatas: [dealPhotoData ?? Data()],
+                    photoDatas: dealPhotoDatas,
                     tags: deal.tags.split(separator: "#").map({ String($0) }),
                     isPremiumDeal: deal.isPremiumDeal,
                     isActive: deal.isActive,
@@ -1564,44 +1131,48 @@ struct UserController: RouteCollection {
                         id: petType.id,
                         localizedNames: petType.localizedNames,
                         imageData: (try? await FileManager.get(req: req, with: petType.imagePath)) ?? .init(),
-                        petBreeds: try await petType.$petBreeds.get(on: req.db)
+                        petBreeds: (try? await petType.$petBreeds.get(on: req.db)) ?? .init()
                     ),
                     petBreed: .init(id: petBreed.id, name: petBreed.name, petType: petType),
                     petClass: .get(deal.petClass) ?? .allClass,
                     isMale: deal.isMale,
                     birthDate: deal.birthDate,
                     color: deal.color,
-                    price: Double(try await CurrencyConverter.convert(
+                    price: deal.price != nil ? Double((try? await CurrencyConverter.convert(
                         req,
                         from: deal.currencyName,
                         to: someUser.basicCurrencyName,
-                        amount: deal.price
-                    ).result),
+                        amount: deal.price ?? .zero
+                    ).result) ?? .zero) : nil,
                     currencyName: someUser.basicCurrencyName,
                     score: deal.score,
                     cattery: User.Output(
-                        name: String(),
+                        id: cattery.id,
+                        name: cattery.name,
+                        avatarData: catteryAvatarData,
                         deals: [Deal.Output](),
                         boughtDeals: [Deal.Output](),
                         ads: [Ad.Output](),
                         myOffers: [Offer.Output](),
                         offers: [Offer.Output](),
                         chatRooms: [ChatRoom.Output](),
-                        score: .zero,
-                        isPremiumUser: someUser.isPremiumUser
+                        score: .zero
                     ),
+                    country: deal.country,
+                    city: deal.city,
                     offers: [Offer.Output]()
                 ),
                 cattery: User.Output(
-                    name: String(),
+                    id: cattery.id,
+                    name: cattery.name,
+                    avatarData: catteryAvatarData,
                     deals: [Deal.Output](),
                     boughtDeals: [Deal.Output](),
                     ads: [Ad.Output](),
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    score: .zero,
-                    isPremiumUser: someUser.isPremiumUser
+                    score: .zero
                 )
             ))
         }
@@ -1610,35 +1181,43 @@ struct UserController: RouteCollection {
     }
     
     private func offers(req: Request) async throws -> [Offer.Output] {
-        _ = try req.auth.require(User.self)
-        
-        guard let someUser = try await User.find(req.parameters.get(":userID"), on: req.db) else {
-            throw Abort(.notFound)
-        }
-        
+        let user = try req.auth.require(User.self)
         var offers = [Offer.Output]()
         
+        guard let someUser = try await User.find(req.parameters.get("userID"), on: req.db) else { throw Abort(.notFound) }
+        guard user.id == someUser.id || user.isAdmin else { throw Abort(.badRequest) }
+        
         for offer in try await someUser.$offers.get(on: req.db) {
-            let deal = try await offer.$deal.get(on: req.db)
-            let buyer = try await offer.$buyer.get(on: req.db)
-            var dealPhotoData: Data?
+            guard let deal = try? await offer.$deal.get(on: req.db),
+                  let buyer = try? await offer.$buyer.get(on: req.db),
+                  let cattery = try? await offer.$cattery.get(on: req.db) else { continue }
+            
+            var dealPhotoDatas = [Data]()
             var buyerAvatarData: Data?
+            var catteryAvatarData: Data?
             
             if let path = buyer.avatarPath {
-                dealPhotoData = try? await FileManager.get(req: req, with: path)
-            }
-            
-            if let path = deal.photoPaths.first {
                 buyerAvatarData = try? await FileManager.get(req: req, with: path)
             }
             
-            let petType = try await deal.$petType.get(on: req.db)
-            let petBreed = try await deal.$petBreed.get(on: req.db)
+            if let path = cattery.avatarPath {
+                catteryAvatarData = try? await FileManager.get(req: req, with: path)
+            }
+            
+            for path in deal.photoPaths {
+                guard let data = try? await FileManager.get(req: req, with: path) else { continue }
+                
+                dealPhotoDatas.append(data)
+            }
+            
+            guard let petType = try? await deal.$petType.get(on: req.db), let petBreed = try? await deal.$petBreed.get(on: req.db) else { continue }
             
             offers.append(Offer.Output(
+                id: offer.id,
                 price: offer.price,
                 currencyName: offer.currencyName,
                 buyer: User.Output(
+                    id: buyer.id,
                     name: buyer.name,
                     avatarData: buyerAvatarData,
                     deals: [Deal.Output](),
@@ -1647,12 +1226,12 @@ struct UserController: RouteCollection {
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    score: .zero,
-                    isPremiumUser: buyer.isPremiumUser
+                    score: .zero
                 ),
                 deal: Deal.Output(
+                    id: deal.id,
                     title: deal.title,
-                    photoDatas: [dealPhotoData ?? Data()],
+                    photoDatas: dealPhotoDatas,
                     tags: deal.tags.split(separator: "#").map({ String($0) }),
                     isPremiumDeal: deal.isPremiumDeal,
                     isActive: deal.isActive,
@@ -1662,44 +1241,48 @@ struct UserController: RouteCollection {
                         id: petType.id,
                         localizedNames: petType.localizedNames,
                         imageData: (try? await FileManager.get(req: req, with: petType.imagePath)) ?? .init(),
-                        petBreeds: try await petType.$petBreeds.get(on: req.db)
+                        petBreeds: (try? await petType.$petBreeds.get(on: req.db)) ?? .init()
                     ),
                     petBreed: .init(id: petBreed.id, name: petBreed.name, petType: petType),
                     petClass: .get(deal.petClass) ?? .allClass,
                     isMale: deal.isMale,
                     birthDate: deal.birthDate,
                     color: deal.color,
-                    price: Double(try await CurrencyConverter.convert(
+                    price: deal.price != nil ? Double((try? await CurrencyConverter.convert(
                         req,
                         from: deal.currencyName,
                         to: someUser.basicCurrencyName,
-                        amount: deal.price
-                    ).result),
+                        amount: deal.price ?? .zero
+                    ).result) ?? .zero) : nil,
                     currencyName: someUser.basicCurrencyName,
                     score: deal.score,
                     cattery: User.Output(
-                        name: String(),
+                        id: cattery.id,
+                        name: cattery.name,
+                        avatarData: catteryAvatarData,
                         deals: [Deal.Output](),
                         boughtDeals: [Deal.Output](),
                         ads: [Ad.Output](),
                         myOffers: [Offer.Output](),
                         offers: [Offer.Output](),
                         chatRooms: [ChatRoom.Output](),
-                        score: .zero,
-                        isPremiumUser: someUser.isPremiumUser
+                        score: .zero
                     ),
+                    country: deal.country,
+                    city: deal.city,
                     offers: [Offer.Output]()
                 ),
                 cattery: User.Output(
-                    name: String(),
+                    id: cattery.id,
+                    name: cattery.name,
+                    avatarData: catteryAvatarData,
                     deals: [Deal.Output](),
                     boughtDeals: [Deal.Output](),
                     ads: [Ad.Output](),
                     myOffers: [Offer.Output](),
                     offers: [Offer.Output](),
                     chatRooms: [ChatRoom.Output](),
-                    score: .zero,
-                    isPremiumUser: someUser.isPremiumUser
+                    score: .zero
                 )
             ))
         }
@@ -1738,10 +1321,9 @@ struct UserController: RouteCollection {
                                 myOffers: [Offer.Output](),
                                 offers: [Offer.Output](),
                                 chatRooms: [ChatRoom.Output](),
-                                score: .zero,
-                                isPremiumUser: messageUser.isPremiumUser
+                                score: .zero
                             ),
-                            createdAt: message.$createdAt.timestamp,
+                            createdAt: ISO8601DateFormatter().date(from: message.$createdAt.timestamp ?? .init()),
                             chatRoom: ChatRoom.Output(users: [User.Output](), messages: [Message.Output]())
                         ))
                     }
@@ -1765,14 +1347,13 @@ struct UserController: RouteCollection {
                             myOffers: [Offer.Output](),
                             offers: [Offer.Output](),
                             chatRooms: [ChatRoom.Output](),
-                            score: .zero,
-                            isPremiumUser: chatUser.isPremiumUser
+                            score: .zero
                         ))
                     }
                 }
                 
                 chatRooms.append(ChatRoom.Output(
-                    id: chatRoom.id,
+                    id: chatRoomID,
                     users: users,
                     messages: messages
                 ))
@@ -1794,100 +1375,18 @@ struct UserController: RouteCollection {
         }
     }
     
-    private func makeUserPremium(req: Request) async throws -> HTTPStatus {
-        let user = try req.auth.require(User.self)
-        let productID = try req.content.decode(Subscription.self).productID
-        let block: @Sendable (Timer) -> Void = { _ in
-            req.redirect(to: "/users/not/premium").encodeResponse(for: req).whenFailure {
-                print("❌ Error: \($0.localizedDescription)")
-            }
+    private func subcription(req: Request) async throws -> Subscription.Output {
+        guard let subscription = try await req.auth.require(User.self).$subscrtiption.get(on: req.db) else {
+            throw Abort(.notFound)
         }
         
-        user.isPremiumUser = true
-        
-        try await user.save(on: req.db)
-        
-        for deal in (try? await user.$deals.get(on: req.db)) ?? .init() where deal.isActive {
-            deal.isPremiumDeal = true
-            deal.score = user.score * 4
-            
-            try? await deal.save(on: req.db)
-        }
-        
-        switch productID {
-        case .premiumSubscriptionOneMonth:
-            RunLoop.main.add(
-                Timer(
-                    timeInterval: Calendar.current.nextDate(
-                        after: .init(),
-                        matching: .init(month: 1),
-                        matchingPolicy: .previousTimePreservingSmallerComponents
-                    )?.timeIntervalSinceNow ?? .init(),
-                    repeats: false,
-                    block: block
-                ),
-                forMode: .common
-            )
-        case .premiumSubscriptionThreeMonth:
-            RunLoop.main.add(
-                Timer(
-                    timeInterval: Calendar.current.nextDate(
-                        after: .init(),
-                        matching: .init(month: 3),
-                        matchingPolicy: .previousTimePreservingSmallerComponents
-                    )?.timeIntervalSinceNow ?? .init(),
-                    repeats: false,
-                    block: block
-                ),
-                forMode: .common
-            )
-        case .premiumSubscriptionSixMonth:
-            RunLoop.main.add(
-                Timer(
-                    timeInterval: Calendar.current.nextDate(
-                        after: .init(),
-                        matching: .init(month: 6),
-                        matchingPolicy: .previousTimePreservingSmallerComponents
-                    )?.timeIntervalSinceNow ?? .init(),
-                    repeats: false,
-                    block: block
-                ),
-                forMode: .common
-            )
-        case .premiumSubscriptionOneYear:
-            RunLoop.main.add(
-                Timer(
-                    timeInterval: Calendar.current.nextDate(
-                        after: .init(),
-                        matching: .init(year: 1),
-                        matchingPolicy: .previousTimePreservingSmallerComponents
-                    )?.timeIntervalSinceNow ?? .init(),
-                    repeats: false,
-                    block: block
-                ),
-                forMode: .common
-            )
-        default:
-            break
-        }
-        
-        return .ok
-    }
-    
-    private func makeUserNotPremium(req: Request) async throws -> HTTPStatus {
-        let user = try req.auth.require(User.self)
-        
-        user.isPremiumUser = false
-        
-        try await user.save(on: req.db)
-        
-        for deal in (try? await user.$deals.get(on: req.db)) ?? .init() where deal.isActive {
-            deal.score /= 2
-            
-            try? await deal.save(on: req.db)
-        }
-        
-        return .ok
+        return .init(
+            id: subscription.id,
+            titleSubscription: try await subscription.$titleSubscription.get(on: req.db),
+            expirationDate: subscription.expirationDate,
+            user: subscription.user,
+            createdAt: subscription.createdAt
+        )
     }
     
     private func create(req: Request) async throws -> HTTPStatus {
@@ -1940,7 +1439,6 @@ struct UserController: RouteCollection {
         oldUser.name = newUser.name
         oldUser.description = newUser.description
         oldUser.isCatteryWaitVerify = newUser.isCatteryWaitVerify
-        oldUser.deviceTokens = newUser.deviceTokens
         oldUser.countryCode = newUser.countryCode
         oldUser.basicCurrencyName = newUser.basicCurrencyName.rawValue
         

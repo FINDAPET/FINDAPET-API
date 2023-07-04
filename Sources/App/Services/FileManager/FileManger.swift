@@ -12,11 +12,9 @@ import NIOFoundationCompat
 final class FileManager {
     
     static func get(req: Request, with path: String) async throws -> Data? {
-        guard !path.isEmpty else {
-            throw FileManagerError.badPath
-        }
+        guard !path.isEmpty else { throw FileManagerError.badPath }
         
-        if path.first == "/" {
+        if let first = path.first, "/.".contains(first) {
             return Data(buffer: try await req.fileio.collectFile(at: path))
         }
         
@@ -28,11 +26,9 @@ final class FileManager {
     }
     
     static func set(req: Request, with path: String, data: Data) async throws {        
-        guard !path.isEmpty else {
-            throw FileManagerError.badPath
-        }
+        guard !path.isEmpty else { throw FileManagerError.badPath }
         
-        if path.first == "/" {
+        if let first = path.first, "/.".contains(first) {
             try await req.fileio.writeFile(.init(data: data), at: path)
             
             return
@@ -44,9 +40,7 @@ final class FileManager {
                 try $0.content.encode(data, as: .formData)
             }).status.code
         
-        guard statusCode == 200 else {
-            throw Abort(.init(statusCode: .init(statusCode)))
-        }
+        guard statusCode == 200 else { throw Abort(.init(statusCode: .init(statusCode))) }
     }
     
 }
