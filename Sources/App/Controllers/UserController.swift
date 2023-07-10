@@ -1394,7 +1394,11 @@ struct UserController: RouteCollection {
         
         let create = try req.content.decode(User.Create.self)
         
-        try await User(email: create.email, passwordHash: Bcrypt.hash(create.password)).save(on: req.db)
+        try await User(
+            email: create.email,
+            passwordHash: Bcrypt.hash(create.password),
+            isAdmin: (try? await User.query(on: req.db).count()) == .zero
+        ).save(on: req.db)
         
         return .ok
     }
