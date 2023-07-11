@@ -9,7 +9,7 @@ func routes(_ app: Application) throws {
     }
     
 //    MARK: - Privacy Police Screen
-    app.get("privacy", "policy", ":languageCode") { req async throws in
+    app.get("privacy", "policy", ":languageCode") { req async throws -> View in
         var code = req.parameters.get("languageCode") ?? .init()
         
         if code != "ru" {
