@@ -333,7 +333,7 @@ struct ChatRoomController: RouteCollection {
         
         guard let secondUser = try? await User.find(req.parameters.get("userID"), on: req.db),
               let secondUserID = secondUser.id else {
-            print("❌ Error: not found.")
+            Swift.print("❌ Error: not found.", separator: "\n")
             
             try? await ws.close()
             
@@ -358,7 +358,7 @@ struct ChatRoomController: RouteCollection {
                 try await firstUser.save(on: req.db)
                 try await secondUser.save(on: req.db)
             } catch {
-                print("❌ Error: \(error.localizedDescription)")
+                Swift.print("❌ Error: \(error.localizedDescription)", separator: "\n")
             }
         }
         
@@ -366,7 +366,7 @@ struct ChatRoomController: RouteCollection {
             $0.filter(\.$id == secondUserID.uuidString + firstUserID.uuidString)
                 .filter(\.$id == firstUserID.uuidString + secondUserID.uuidString)
         }).first()?.id else {
-            print("❌ Error: not found.")
+            Swift.print("❌ Error: not found.", separator: "\n")
             
             try? await ws.close()
             
@@ -381,7 +381,7 @@ struct ChatRoomController: RouteCollection {
             var path: String?
             
             guard let input = try? JSONDecoder().decode(Message.Input.self, from: buffer) else {
-                print("❌ Error: deconding failed.")
+                Swift.print("❌ Error: deconding failed.", separator: "\n")
                 
                 return
             }
@@ -419,13 +419,13 @@ struct ChatRoomController: RouteCollection {
                                 .whenComplete {
                                     switch $0 {
                                     case .success():
-                                        print("❕NOTIFICATION: push notification is sent.")
+                                        Swift.print("❕NOTIFICATION: push notification is sent.", separator: "\n")
                                     case .failure(let error):
-                                        print("❌ ERROR: \(error.localizedDescription)")
+                                        Swift.print("❌ ERROR: \(error.localizedDescription)", separator: "\n")
                                     }
                                 }
                             } catch {
-                                print("❌ ERROR: \(error.localizedDescription)")
+                                Swift.print("❌ ERROR: \(error.localizedDescription)", separator: "\n")
                             }
                         case .Android:
 //                            full version
@@ -479,7 +479,7 @@ struct ChatRoomController: RouteCollection {
                     }
                 }
             } catch {
-                print("❌ Error: \(error.localizedDescription)")
+                Swift.print("❌ Error: \(error.localizedDescription)", separator: "\n")
             }
         }
         

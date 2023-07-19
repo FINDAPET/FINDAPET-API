@@ -1501,7 +1501,7 @@ struct UserController: RouteCollection {
     
     private func userWebSocket(req: Request, ws: WebSocket) async {
         guard let userID = try? req.auth.require(User.self).id else {
-            print("❌ Error: not authorized.")
+            Swift.print("❌ Error: not authorized.", separator: "\n")
             
             try? await ws.close()
             
