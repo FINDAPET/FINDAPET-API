@@ -324,7 +324,7 @@ struct ChatRoomController: RouteCollection {
     
     private func chatRoomWebSocket(req: Request, ws: WebSocket) async {
         guard let firstUser = try? req.auth.require(User.self), let firstUserID = firstUser.id else {
-            print("❌ Error: not autorized.")
+            req.logger.info("❌ Error: not autorized.")
             
             try? await ws.close()
             
@@ -333,7 +333,7 @@ struct ChatRoomController: RouteCollection {
         
         guard let secondUser = try? await User.find(req.parameters.get("userID"), on: req.db),
               let secondUserID = secondUser.id else {
-            Swift.print("❌ Error: not found.", separator: "\n")
+            req.logger.info("❌ Error: not found.")
             
             try? await ws.close()
             
@@ -358,7 +358,7 @@ struct ChatRoomController: RouteCollection {
                 try await firstUser.save(on: req.db)
                 try await secondUser.save(on: req.db)
             } catch {
-                Swift.print("❌ Error: \(error.localizedDescription)", separator: "\n")
+                req.logger.info("❌ Error: \(error.localizedDescription)")
             }
         }
         
@@ -366,7 +366,7 @@ struct ChatRoomController: RouteCollection {
             $0.filter(\.$id == secondUserID.uuidString + firstUserID.uuidString)
                 .filter(\.$id == firstUserID.uuidString + secondUserID.uuidString)
         }).first()?.id else {
-            Swift.print("❌ Error: not found.", separator: "\n")
+            req.logger.info("❌ Error: not found.")
             
             try? await ws.close()
             
@@ -381,7 +381,7 @@ struct ChatRoomController: RouteCollection {
             var path: String?
             
             guard let input = try? JSONDecoder().decode(Message.Input.self, from: buffer) else {
-                Swift.print("❌ Error: deconding failed.", separator: "\n")
+                req.logger.info("❌ Error: deconding failed.")
                 
                 return
             }
@@ -419,13 +419,13 @@ struct ChatRoomController: RouteCollection {
                                 .whenComplete {
                                     switch $0 {
                                     case .success():
-                                        Swift.print("❕NOTIFICATION: push notification is sent.", separator: "\n")
+                                        req.logger.info("❕NOTIFICATION: push notification is sent.")
                                     case .failure(let error):
-                                        Swift.print("❌ ERROR: \(error.localizedDescription)", separator: "\n")
+                                        req.logger.info("❌ ERROR: \(error.localizedDescription)")
                                     }
                                 }
                             } catch {
-                                Swift.print("❌ ERROR: \(error.localizedDescription)", separator: "\n")
+                                req.logger.info("❌ ERROR: \(error.localizedDescription)")
                             }
                         case .Android:
 //                            full version
@@ -479,7 +479,7 @@ struct ChatRoomController: RouteCollection {
                     }
                 }
             } catch {
-                Swift.print("❌ Error: \(error.localizedDescription)", separator: "\n")
+                req.logger.info("❌ Error: \(error.localizedDescription)")
             }
         }
         
