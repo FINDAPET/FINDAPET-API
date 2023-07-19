@@ -32,7 +32,9 @@ public func configure(_ app: Application) throws {
     
 //    MARK: - Middleware
     // uncomment to serve files from /Public folder
+    #if os(macOS)
     app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
+    #endif
     app.middleware.use(FileMiddleware(publicDirectory: app.directory.workingDirectory))
     app.middleware.use(app.sessions.middleware)
     
