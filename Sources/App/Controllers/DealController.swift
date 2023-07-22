@@ -460,7 +460,11 @@ struct DealController: RouteCollection {
         for photoData in deal.photoDatas {
             let path = req.application.directory.publicDirectory.appending(UUID().uuidString)
             
-            try await FileManager.set(req: req, with: path, data: photoData)
+            do {
+                try await FileManager.set(req: req, with: path, data: photoData)
+            } catch {
+                req.logger.warning(.init(stringLiteral: error.localizedDescription))
+            }
 
             photoPaths.append(path)
         }
